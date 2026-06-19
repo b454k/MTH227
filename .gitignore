@@ -1,0 +1,31 @@
+.env
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+
+# Local databases and vector indexes
+*.duckdb
+*.sqlite3
+*.bin
+*.pickle
+data/duckdb/
+data/chroma_onet/
+chroma_research/
+
+# Generated O*NET and research artifacts
+data/documents/
+data/research/*.csv
+data/research/*.jsonl
+data/research/*.xlsx
+data/research/pdfs/
+data/research/web_snapshots/
+
+# Large source data dumps; download/place locally before rebuilding
+onet_sql/*.sql

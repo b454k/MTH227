@@ -1,0 +1,9 @@
+beautifulsoup4
+chromadb
+duckdb
+openai
+pandas
+python-dotenv
+requests
+sentence-transformers
+tqdm
