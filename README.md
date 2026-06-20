@@ -35,6 +35,7 @@ Career RAG is a retrieval-augmented career guidance project. It combines:
 | `extract_ai_impact_claims.py` | Uses the OpenAI API to extract AI/job-impact claims from research chunks. |
 | `postprocess_ai_impact_claims.py` | Cleans labels, validates quotes, and prepares final research claim JSONL without API calls. |
 | `embed_ai_impact_claims.py` | Embeds final AI-impact claims into ChromaDB using `BAAI/bge-small-en-v1.5`. |
+| `config.py` | Shared project constants, including the single SentenceTransformer embedding model name. |
 
 ## Scripts: `scripts/`
 
@@ -97,12 +98,19 @@ The numbered SQL files are the source O*NET tables. They are imported in filenam
 | Item | Purpose |
 | --- | --- |
 | `data/chroma_onet/` | O*NET ChromaDB persistence directory. Contains `onet_sections`, `onet_full_occupations`, and `onet_supplemental`. |
-| `chroma_research/` | Research ChromaDB persistence directory. Contains `research_ai_impact_claims`. |
+| `chroma_research/` | Research ChromaDB persistence directory. Contains `research_ai_impact_claims` and `research_inference`. |
+| `chroma_ai_impact/` | Structured AI-impact evidence ChromaDB persistence directory. Contains `ai_impact_evidence`. |
 
-Both sides use the embedding model:
+All Chroma collections use the embedding model defined in `career_rag/config.py`:
 
 ```text
 BAAI/bge-small-en-v1.5
+```
+
+SentenceTransformer model loading requires `HF_TOKEN` in the project `.env`:
+
+```text
+HF_TOKEN=your_huggingface_token
 ```
 
 Research retrieval uses the BGE query prefix:
@@ -135,6 +143,86 @@ Research side:
 .venv\Scripts\python.exe career_rag\postprocess_ai_impact_claims.py
 .venv\Scripts\python.exe career_rag\embed_ai_impact_claims.py
 ```
+
+## AI Exposure Evidence Pipeline
+
+This newer pipeline keeps AI-exposure statistics separate from general research text.
+
+Statistics sources:
+
+- NBER Working Paper 31222
+- Anthropic Economic Index
+
+Non-statistics research sources:
+
+- Used only for methodology, definitions, caveats, and short inference.
+- Not allowed to produce numeric AI-impact claims.
+
+Command order:
+
+```powershell
+.venv\Scripts\python.exe -m career_rag.download_research_sources --source-file source_url.txt
+.venv\Scripts\python.exe -m career_rag.extract_research_chunks
+.venv\Scripts\python.exe -m career_rag.extract_nber_w31222_ai_exposure --use-llm
+.venv\Scripts\python.exe -m career_rag.build_anthropic_economic_index --download-if-missing
+.venv\Scripts\python.exe -m career_rag.merge_ai_impact_evidence
+.venv\Scripts\python.exe -m career_rag.embed_ai_impact_evidence
+.venv\Scripts\python.exe -m career_rag.ai_impact_retriever "data scientist mathematical modeling ai exposure" --soc-code 15-2051.00 --top-k 8 --debug
+.venv\Scripts\python.exe -m career_rag.generator "What does data scientists do, how is the ai exposure?" --show-sources
+```
+
+If LLM extraction is unavailable, run NBER extraction without `--use-llm`:
+
+```powershell
+.venv\Scripts\python.exe -m career_rag.extract_nber_w31222_ai_exposure
+```
+
+Inputs and outputs:
+
+| Step | Input | Output |
+| --- | --- | --- |
+| Download sources | `data/research/source_urls.txt` or `source_url.txt` | `data/research_sources/raw/`, `data/research_sources/source_manifest.jsonl` |
+| Research chunks | `data/research_sources/source_manifest.jsonl` | `data/processed/research_inference_chunks.jsonl` |
+| NBER W31222 extraction | NBER row in manifest | `data/processed/nber_w31222_ai_exposure.jsonl`, `data/processed/nber_w31222_method_chunks.jsonl`, `data/processed/nber_w31222_extraction_errors.jsonl` |
+| Anthropic ingestion | `data/anthropic_economic_index/` or Hugging Face download | `data/processed/anthropic_ai_impact.jsonl`, `data/processed/anthropic_ai_impact_errors.jsonl` |
+| Merge/dedup | Anthropic and NBER structured JSONL | `data/processed/ai_impact_evidence.jsonl`, `data/processed/ai_impact_evidence_deduped.jsonl` |
+| Embed | Deduped evidence and inference chunks | `chroma_ai_impact/ai_impact_evidence`, `chroma_research/research_inference` |
+
+Chroma collections:
+
+- `data/chroma_onet/onet_sections`: O*NET section evidence.
+- `chroma_ai_impact/ai_impact_evidence`: structured statistics from Anthropic Economic Index and NBER W31222.
+- `chroma_research/research_inference`: methodology/caveat chunks only.
+
+Generator usage:
+
+```powershell
+.venv\Scripts\python.exe -m career_rag.generator
+.venv\Scripts\python.exe -m career_rag.generator "What does a data scientist do, and how is the AI exposure?" --show-sources
+```
+
+When no query is passed, the CLI prompts:
+
+```text
+Enter your career question:
+```
+
+Limitations:
+
+- Exposure does not equal job loss.
+- Occupation-level exposure should not be presented as task-level exposure.
+- Firm-level exposure should not be converted into task-level exposure.
+- Non-statistics papers are not allowed to produce numeric AI-impact claims.
+- LLM extraction from NBER W31222 must be checked because it may miss or misread values.
+- Anthropic data reflects observed Claude usage and source-specific task mappings, not a complete forecast of labor-market outcomes.
+
+Smoke test:
+
+```powershell
+.venv\Scripts\python.exe -m career_rag.test_ai_impact_pipeline
+```
+
+The smoke test writes `test_results_ai_impact.txt`.
 
 Normal querying:
 

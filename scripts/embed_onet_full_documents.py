@@ -20,12 +20,28 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
+from career_rag.config import (
+    EMBEDDING_MODEL_NAME,
+    EXPECTED_EMBEDDING_DIMENSION,
+    require_hf_token,
+)
+
+
+MODEL_NAME = EMBEDDING_MODEL_NAME
 DOCUMENTS_JSONL = Path("data/documents/onet_occupation_documents.jsonl")
 CHROMA_DB_PATH = Path("data/chroma_onet")
 COLLECTION_NAME = "onet_full_occupations"
 DEFAULT_BATCH_SIZE = 50
+
+COLLECTION_METADATA = {
+    "embedding_model": MODEL_NAME,
+    "embedding_dimension": EXPECTED_EMBEDDING_DIMENSION,
+    "source_file": str(DOCUMENTS_JSONL),
+}
 
 
 def load_documents() -> tuple[list[str], list[str], list[dict[str, Any]]]:
@@ -68,6 +84,7 @@ def load_documents() -> tuple[list[str], list[str], list[dict[str, Any]]]:
 def load_model() -> SentenceTransformer:
     """Load the sentence-transformer model used during indexing."""
     print(f"\nLoading embedding model: {MODEL_NAME}")
+    require_hf_token()
     model = SentenceTransformer(MODEL_NAME)
     print(f"Model loaded. Embedding dimension: {model.get_sentence_embedding_dimension()}")
     return model
@@ -99,7 +116,10 @@ def get_or_create_collection(
     """Connect to ChromaDB and get or create the full occupation collection."""
     chroma_path.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(chroma_path))
-    collection = client.get_or_create_collection(name=collection_name)
+    collection = client.get_or_create_collection(
+        name=collection_name,
+        metadata=COLLECTION_METADATA,
+    )
     print(f"\nUsing collection: {collection.name}")
     return collection
 

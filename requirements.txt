@@ -3,6 +3,9 @@ chromadb
 duckdb
 openai
 pandas
+PyMuPDF
+openpyxl
+pyarrow
 python-dotenv
 requests
 sentence-transformers

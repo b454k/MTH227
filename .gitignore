@@ -1,31 +1,43 @@
+# Secrets and local environment
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python environments and caches
 .venv/
 .venv-*/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
 htmlcov/
+
+# IDE and machine-local settings
+.vscode/settings.json
+.idea/
+
+# Logs and generated run reports
 *.log
+test_results*.txt
 
 # Local databases and vector indexes
 *.duckdb
+*.sqlite
 *.sqlite3
+*.db
 *.bin
 *.pickle
-data/duckdb/
+*.pkl
 data/chroma_onet/
 chroma_research/
+chroma_ai_impact/
 
-# Generated O*NET and research artifacts
-data/documents/
-data/research/*.csv
-data/research/*.jsonl
-data/research/*.xlsx
-data/research/pdfs/
-data/research/web_snapshots/
+# Generated/downloaded datasets and processing outputs
+data/
 
 # Large source data dumps; download/place locally before rebuilding
 onet_sql/*.sql

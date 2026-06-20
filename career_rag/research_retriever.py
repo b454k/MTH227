@@ -12,12 +12,25 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+try:
+    from career_rag.config import (
+        BGE_QUERY_PREFIX,
+        EMBEDDING_MODEL_NAME,
+        require_hf_token,
+        validate_collection_embedding_model,
+    )
+except ImportError:  # Allows: py career_rag/research_retriever.py
+    from config import (  # type: ignore
+        BGE_QUERY_PREFIX,
+        EMBEDDING_MODEL_NAME,
+        require_hf_token,
+        validate_collection_embedding_model,
+    )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PERSIST_DIR = PROJECT_ROOT / "chroma_research"
 DEFAULT_COLLECTION = "research_ai_impact_claims"
-DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
-BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+DEFAULT_MODEL = EMBEDDING_MODEL_NAME
 
 RETURN_FIELDS = (
     "claim_id",
@@ -210,6 +223,7 @@ def _load_model() -> Any:
             "before using the research retriever."
         ) from exc
 
+    require_hf_token()
     return SentenceTransformer(DEFAULT_MODEL)
 
 
@@ -231,13 +245,7 @@ def _load_collection() -> Any:
 
     client = chromadb.PersistentClient(path=str(DEFAULT_PERSIST_DIR))
     collection = client.get_collection(name=DEFAULT_COLLECTION)
-    metadata = collection.metadata or {}
-    embedding_model = _clean_text(metadata.get("embedding_model"))
-    if embedding_model and embedding_model != DEFAULT_MODEL:
-        raise RuntimeError(
-            f"Research collection embedding_model={embedding_model}; "
-            f"expected {DEFAULT_MODEL}."
-        )
+    validate_collection_embedding_model(collection, DEFAULT_MODEL)
     return collection
 
 

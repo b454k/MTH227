@@ -13,12 +13,28 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
+from career_rag.config import (
+    EMBEDDING_MODEL_NAME,
+    EXPECTED_EMBEDDING_DIMENSION,
+    require_hf_token,
+)
+
+
+MODEL_NAME = EMBEDDING_MODEL_NAME
 DOCUMENTS_JSONL = Path("data/documents/onet_supplemental_documents.jsonl")
 CHROMA_DB_PATH = Path("data/chroma_onet")
 COLLECTION_NAME = "onet_supplemental"
 DEFAULT_BATCH_SIZE = 50
+
+COLLECTION_METADATA = {
+    "embedding_model": MODEL_NAME,
+    "embedding_dimension": EXPECTED_EMBEDDING_DIMENSION,
+    "source_file": str(DOCUMENTS_JSONL),
+}
 
 
 def clean_metadata(metadata: dict[str, Any]) -> dict[str, str | int | float | bool]:
@@ -71,6 +87,7 @@ def load_documents() -> tuple[list[str], list[str], list[dict[str, Any]]]:
 def load_model() -> SentenceTransformer:
     """Load the embedding model used by the existing O*NET collections."""
     print(f"\nLoading embedding model: {MODEL_NAME}")
+    require_hf_token()
     model = SentenceTransformer(MODEL_NAME)
     if hasattr(model, "get_embedding_dimension"):
         embedding_dimension = model.get_embedding_dimension()
@@ -102,7 +119,10 @@ def get_or_create_collection() -> chromadb.Collection:
     """Connect to ChromaDB and get or create the supplemental collection."""
     CHROMA_DB_PATH.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
-    collection = client.get_or_create_collection(name=COLLECTION_NAME)
+    collection = client.get_or_create_collection(
+        name=COLLECTION_NAME,
+        metadata=COLLECTION_METADATA,
+    )
     print(f"\nUsing collection: {collection.name}")
     return collection
 

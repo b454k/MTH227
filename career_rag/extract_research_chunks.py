@@ -1,665 +1,351 @@
-"""Extract clean text chunks from saved research PDFs and web snapshots.
+#!/usr/bin/env python3
+"""Extract policy-limited inference chunks from downloaded research sources."""
 
-The script reads ``research_sources_enriched.csv``, extracts text from local
-PDF/TXT/HTML files, chunks it with page metadata, and writes
-``research_chunks.jsonl`` plus a chunk summary CSV for later claim extraction.
-"""
+from __future__ import annotations
 
-from pathlib import Path
-import json
+import argparse
 import re
+from pathlib import Path
+from typing import Any
 
-import fitz  # PyMuPDF
-import pandas as pd
+from bs4 import BeautifulSoup
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-RESEARCH_DIR = REPO_ROOT / "data" / "research"
-SOURCES_CSV = RESEARCH_DIR / "research_sources_enriched.csv"
-CHUNKS_JSONL = RESEARCH_DIR / "research_chunks.jsonl"
-SUMMARY_CSV = RESEARCH_DIR / "research_chunk_summary.csv"
-
-PROCESSABLE_STATUSES = {
-    "saved_pdf",
-    "saved_pdf_from_page",
-    "saved_webpage_text",
-}
-
-MIN_CHARS = 300
-TARGET_CHARS = 2000
-MAX_CHARS = 2500
-OVERLAP_CHARS = 250
-MAX_PAGES_PER_PDF_CHUNK = 3
-
-CHUNK_FIELDS = [
-    "chunk_id",
-    "source_id",
-    "chunk_index",
-    "source_type",
-    "title",
-    "authors",
-    "year",
-    "doi",
-    "url",
-    "final_url",
-    "access_date",
-    "local_path",
-    "status",
-    "page_start",
-    "page_end",
-    "section_title",
-    "text",
-    "char_count",
-    "word_count",
-]
-
-SUMMARY_FIELDS = [
-    "source_id",
-    "title",
-    "status",
-    "local_path",
-    "processed",
-    "num_chunks",
-    "num_chars_extracted",
-    "num_words_extracted",
-    "error_message",
-]
+try:
+    from career_rag.ai_exposure_utils import (
+        PROJECT_ROOT,
+        clean_text,
+        created_at,
+        one_line,
+        read_jsonl,
+        resolve_project_path,
+        stable_doc_id,
+        write_jsonl,
+    )
+except ImportError:  # Allows: py career_rag/extract_research_chunks.py
+    from ai_exposure_utils import (  # type: ignore
+        PROJECT_ROOT,
+        clean_text,
+        created_at,
+        one_line,
+        read_jsonl,
+        resolve_project_path,
+        stable_doc_id,
+        write_jsonl,
+    )
 
 
-def get_value(row, column):
-    """Return a metadata value as a clean string, even when the column is absent."""
-    value = row.get(column, "")
-    if value is None or pd.isna(value):
-        return ""
-    return str(value).strip()
+DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "research_sources" / "source_manifest.jsonl"
+DEFAULT_OUTPUT = PROJECT_ROOT / "data" / "processed" / "research_inference_chunks.jsonl"
+
+MIN_WORDS = 120
+TARGET_WORDS = 700
+MAX_WORDS = 900
+OVERLAP_WORDS = 100
+
+METHOD_CAVEAT_TERMS = (
+    "method",
+    "methodology",
+    "measure",
+    "definition",
+    "limitation",
+    "caveat",
+    "uncertain",
+    "uncertainty",
+    "exposure",
+    "automation",
+    "augmentation",
+    "task",
+    "occupation",
+    "generative ai",
+    "large language model",
+    "llm",
+)
+
+GENERIC_SKIP_TERMS = (
+    "copyright",
+    "all rights reserved",
+    "subscribe",
+    "newsletter",
+    "terms of use",
+    "privacy policy",
+    "acknowledgement",
+)
 
 
-def resolve_local_path(local_path):
-    """Resolve paths saved in the CSV, which are usually relative Windows paths."""
-    if not local_path:
-        return None
+def extract_pdf_pages(path: Path) -> list[dict[str, Any]]:
+    """Extract text page by page from a PDF."""
+    try:
+        import fitz
+    except ImportError as exc:
+        raise RuntimeError("PyMuPDF is required for PDF extraction (`pip install PyMuPDF`).") from exc
 
-    path = Path(local_path)
-    if path.is_absolute():
-        return path
-
-    return REPO_ROOT / path
-
-
-def normalize_line(line):
-    return re.sub(r"\s+", " ", line).strip()
-
-
-def is_page_number_line(line):
-    normalized = normalize_line(line).lower()
-    if re.fullmatch(r"[-–—]?\s*\d{1,4}\s*[-–—]?", normalized):
-        return True
-    if re.fullmatch(r"(page\s*)?\d{1,4}\s*(of|/)\s*\d{1,4}", normalized):
-        return True
-    return False
-
-
-def clean_text_block(text):
-    """
-    Normalize text without stripping useful punctuation or citation context.
-
-    The goal is to repair extraction whitespace, not to rewrite the document.
-    """
-    text = "" if text is None else str(text)
-    text = text.replace("\x00", " ")
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"(?<=\w)-\n(?=\w)", "", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-
-    paragraphs = []
-    for paragraph in re.split(r"\n\s*\n", text):
-        paragraph = re.sub(r"\s*\n\s*", " ", paragraph)
-        paragraph = re.sub(r"[ \t]+", " ", paragraph).strip()
-        if paragraph:
-            paragraphs.append(paragraph)
-
-    return "\n\n".join(paragraphs)
-
-
-def find_repeated_pdf_furniture(page_texts):
-    """
-    Find repeated header/footer lines from page edges.
-
-    This intentionally only inspects the first and last few non-empty lines on
-    each page, so repeated phrases in the body text are not removed.
-    """
-    counts = {}
-
-    for text in page_texts:
-        lines = [normalize_line(line) for line in str(text).splitlines()]
-        lines = [line for line in lines if line]
-        edge_lines = lines[:4] + lines[-4:]
-
-        for line in set(edge_lines):
-            if len(line) > 160:
-                continue
-            counts[line] = counts.get(line, 0) + 1
-
-    threshold = max(3, len(page_texts) // 4)
-    return {line for line, count in counts.items() if count >= threshold}
-
-
-def clean_pdf_page_text(page_text, repeated_lines):
-    lines = []
-
-    for line in str(page_text).splitlines():
-        normalized = normalize_line(line)
-        if not normalized:
-            lines.append("")
-            continue
-        if normalized in repeated_lines:
-            continue
-        if is_page_number_line(normalized):
-            continue
-        lines.append(line)
-
-    return clean_text_block("\n".join(lines))
-
-
-def extract_pdf_pages(path):
-    """Extract text page by page with PyMuPDF. No OCR is attempted."""
     doc = fitz.open(path)
     try:
         raw_pages = [page.get_text("text") for page in doc]
     finally:
         doc.close()
 
-    repeated_lines = find_repeated_pdf_furniture(raw_pages)
-    pages = []
-
-    for index, raw_text in enumerate(raw_pages, start=1):
-        cleaned_text = clean_pdf_page_text(raw_text, repeated_lines)
+    repeated = repeated_pdf_furniture(raw_pages)
+    pages: list[dict[str, Any]] = []
+    for page_number, raw_text in enumerate(raw_pages, start=1):
         pages.append(
             {
-                "page_number": index,
-                "text": cleaned_text,
+                "page": page_number,
+                "text": clean_page_text(raw_text, repeated),
             }
         )
-
     return pages
 
 
-def read_text_snapshot(path):
-    return path.read_text(encoding="utf-8", errors="replace")
+def repeated_pdf_furniture(page_texts: list[str]) -> set[str]:
+    """Detect repeated header/footer lines from page edges."""
+    counts: dict[str, int] = {}
+    for text in page_texts:
+        lines = [one_line(line) for line in str(text).splitlines() if one_line(line)]
+        for line in set(lines[:4] + lines[-4:]):
+            if len(line) <= 160:
+                counts[line] = counts.get(line, 0) + 1
+    threshold = max(3, len(page_texts) // 4)
+    return {line for line, count in counts.items() if count >= threshold}
 
 
-def count_words(text):
-    return len(re.findall(r"\b\w+\b", text))
-
-
-def split_long_text(text, max_chars=MAX_CHARS):
-    """
-    Split very long paragraphs at sentence or word boundaries.
-
-    Most chunks are paragraph-based; this is only for unusually long extracted
-    blocks that would otherwise exceed the chunk size.
-    """
-    text = clean_text_block(text)
-    if len(text) <= max_chars:
-        return [text] if text else []
-
-    pieces = []
-    sentences = re.split(r"(?<=[.!?])\s+", text)
-    current = ""
-
-    for sentence in sentences:
-        sentence = sentence.strip()
-        if not sentence:
+def clean_page_text(text: str, repeated_lines: set[str]) -> str:
+    """Remove page furniture and normalize PDF text."""
+    lines: list[str] = []
+    for line in str(text).splitlines():
+        normalized = one_line(line)
+        if normalized in repeated_lines:
             continue
-
-        if len(sentence) > max_chars:
-            if current:
-                pieces.append(current.strip())
-                current = ""
-            pieces.extend(split_by_words(sentence, max_chars))
+        if re.fullmatch(r"[-\s]*\d{1,4}[-\s]*", normalized):
             continue
-
-        candidate = sentence if not current else current + " " + sentence
-        if len(candidate) <= max_chars:
-            current = candidate
-        else:
-            pieces.append(current.strip())
-            current = sentence
-
-    if current:
-        pieces.append(current.strip())
-
-    return pieces
+        lines.append(line)
+    return clean_text("\n".join(lines))
 
 
-def split_by_words(text, max_chars):
-    chunks = []
-    current_words = []
-    current_length = 0
-
-    for word in text.split():
-        extra = len(word) + (1 if current_words else 0)
-        if current_words and current_length + extra > max_chars:
-            chunks.append(" ".join(current_words))
-            current_words = [word]
-            current_length = len(word)
-        else:
-            current_words.append(word)
-            current_length += extra
-
-    if current_words:
-        chunks.append(" ".join(current_words))
-
-    return chunks
+def extract_html_text(path: Path) -> str:
+    """Extract readable text from a saved HTML file."""
+    html = path.read_text(encoding="utf-8", errors="replace")
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    return clean_text(soup.get_text("\n", strip=True))
 
 
-def split_into_paragraphs(text):
-    text = clean_text_block(text)
-    paragraphs = []
-
-    for paragraph in re.split(r"\n\s*\n", text):
-        paragraph = paragraph.strip()
-        if not paragraph:
-            continue
-        paragraphs.extend(split_long_text(paragraph))
-
-    return paragraphs
-
-
-def make_overlap_units(units, overlap_chars):
-    """Carry a small tail of previous text into the next chunk."""
-    if not units or overlap_chars <= 0:
-        return []
-
-    selected = []
-    total_chars = 0
-
-    for unit in reversed(units):
-        selected.insert(0, unit)
-        total_chars += len(unit["text"]) + 2
-        if total_chars >= overlap_chars:
-            break
-
-    overlap_text = join_units(selected)
-    if len(overlap_text) > overlap_chars:
-        overlap_text = overlap_text[-overlap_chars:]
-        first_space = overlap_text.find(" ")
-        if first_space != -1:
-            overlap_text = overlap_text[first_space + 1 :]
-        overlap_text = overlap_text.strip()
-
-    page_start, page_end = page_range_for_units(selected)
-    return [
-        {
-            "text": overlap_text,
-            "page_start": page_start,
-            "page_end": page_end,
-        }
-    ] if overlap_text else []
+def extract_text_pages(path: Path) -> list[dict[str, Any]]:
+    """Extract pages from PDF/HTML/TXT sources."""
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        return extract_pdf_pages(path)
+    if suffix in {".html", ".htm"}:
+        return [{"page": None, "text": extract_html_text(path)}]
+    if suffix in {".txt", ".md"}:
+        return [{"page": None, "text": clean_text(path.read_text(encoding="utf-8", errors="replace"))}]
+    return []
 
 
-def join_units(units):
-    return "\n\n".join(unit["text"] for unit in units if unit.get("text", "").strip()).strip()
-
-
-def page_range_for_units(units):
-    starts = [unit.get("page_start") for unit in units if unit.get("page_start") is not None]
-    ends = [unit.get("page_end") for unit in units if unit.get("page_end") is not None]
-
-    if not starts or not ends:
-        return None, None
-
-    return min(starts), max(ends)
-
-
-def should_flush_chunk(current_units, next_unit, max_pages_per_chunk):
-    if not current_units:
-        return False
-
-    candidate_text = join_units(current_units + [next_unit])
-
-    if len(candidate_text) > MAX_CHARS:
-        return True
-
-    if max_pages_per_chunk is not None:
-        page_start, _ = page_range_for_units(current_units)
-        next_page_end = next_unit.get("page_end")
-        if page_start is not None and next_page_end is not None:
-            page_span = next_page_end - page_start + 1
-            if page_span > max_pages_per_chunk:
-                return True
-
-    return False
-
-
-def overlap_fits_next_chunk(overlap_units, next_unit, max_pages_per_chunk):
-    if not overlap_units:
-        return True
-
-    candidate_text = join_units(overlap_units + [next_unit])
-    if len(candidate_text) > MAX_CHARS:
-        return False
-
-    if max_pages_per_chunk is not None:
-        page_start, _ = page_range_for_units(overlap_units)
-        next_page_end = next_unit.get("page_end")
-        if page_start is not None and next_page_end is not None:
-            page_span = next_page_end - page_start + 1
-            if page_span > max_pages_per_chunk:
-                return False
-
-    return True
-
-
-def build_chunks_from_units(units, max_pages_per_chunk=None):
-    chunks = []
-    current_units = []
-    current_has_new_content = False
-
-    for unit in units:
-        text = unit.get("text", "").strip()
-        if not text:
-            continue
-
-        if should_flush_chunk(current_units, unit, max_pages_per_chunk):
-            chunk_text = join_units(current_units)
-            if current_has_new_content and len(chunk_text) >= MIN_CHARS:
-                page_start, page_end = page_range_for_units(current_units)
-                chunks.append(
-                    {
-                        "text": chunk_text,
-                        "page_start": page_start,
-                        "page_end": page_end,
-                    }
-                )
-                overlap_units = make_overlap_units(current_units, OVERLAP_CHARS)
-                if overlap_fits_next_chunk(overlap_units, unit, max_pages_per_chunk):
-                    current_units = overlap_units
-                else:
-                    current_units = []
-            else:
-                current_units = []
-            current_has_new_content = False
-
-        current_units.append(unit)
-        current_has_new_content = True
-
-        current_text = join_units(current_units)
-        if len(current_text) >= TARGET_CHARS:
-            page_start, page_end = page_range_for_units(current_units)
-            chunks.append(
-                {
-                    "text": current_text,
-                    "page_start": page_start,
-                    "page_end": page_end,
-                }
-            )
-            current_units = make_overlap_units(current_units, OVERLAP_CHARS)
-            current_has_new_content = False
-
-    final_text = join_units(current_units)
-    if current_has_new_content and len(final_text) >= MIN_CHARS:
-        page_start, page_end = page_range_for_units(current_units)
-        chunks.append(
-            {
-                "text": final_text,
-                "page_start": page_start,
-                "page_end": page_end,
-            }
-        )
-
-    return chunks
-
-
-def make_pdf_units(pages):
-    units = []
-
+def paragraph_units(pages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Split extracted pages into paragraph units with page numbers."""
+    units: list[dict[str, Any]] = []
     for page in pages:
-        page_number = page["page_number"]
-        for paragraph in split_into_paragraphs(page["text"]):
-            units.append(
-                {
-                    "text": paragraph,
-                    "page_start": page_number,
-                    "page_end": page_number,
-                }
-            )
-
+        for paragraph in re.split(r"\n\s*\n", page.get("text") or ""):
+            paragraph = one_line(paragraph)
+            if paragraph:
+                units.append({"page": page.get("page"), "text": paragraph})
     return units
 
 
-def make_web_units(text):
-    return [
-        {
-            "text": paragraph,
-            "page_start": None,
-            "page_end": None,
-        }
-        for paragraph in split_into_paragraphs(text)
-    ]
+def word_count(text: str) -> int:
+    """Approximate token count with words."""
+    return len(re.findall(r"\b\w+\b", text))
 
 
-def metadata_for_chunk(row):
-    return {
-        "source_id": get_value(row, "source_id"),
-        "source_type": get_value(row, "source_type"),
-        "title": get_value(row, "title"),
-        "authors": get_value(row, "authors"),
-        "year": get_value(row, "year"),
-        "doi": get_value(row, "doi"),
-        "url": get_value(row, "url"),
-        "final_url": get_value(row, "final_url"),
-        "access_date": get_value(row, "access_date"),
-        "local_path": get_value(row, "local_path"),
-        "status": get_value(row, "status"),
-    }
+def split_oversized_unit(unit: dict[str, Any]) -> list[dict[str, Any]]:
+    """Split unusually long paragraphs by sentence/word boundaries."""
+    text = unit["text"]
+    if word_count(text) <= MAX_WORDS:
+        return [unit]
+
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    pieces: list[dict[str, Any]] = []
+    current: list[str] = []
+    for sentence in sentences:
+        if word_count(" ".join(current + [sentence])) <= MAX_WORDS:
+            current.append(sentence)
+        else:
+            if current:
+                pieces.append({"page": unit.get("page"), "text": " ".join(current).strip()})
+            current = [sentence]
+    if current:
+        pieces.append({"page": unit.get("page"), "text": " ".join(current).strip()})
+    return [piece for piece in pieces if piece["text"]]
 
 
-def make_chunk_rows(row, raw_chunks):
-    metadata = metadata_for_chunk(row)
-    source_id = metadata["source_id"]
-    rows = []
+def chunk_units(units: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Build 500-900 word chunks with 100-word overlap."""
+    expanded: list[dict[str, Any]] = []
+    for unit in units:
+        expanded.extend(split_oversized_unit(unit))
 
-    for index, chunk in enumerate(raw_chunks, start=1):
-        text = chunk["text"].strip()
-        chunk_row = {
-            **metadata,
-            "chunk_id": f"{source_id}_chunk_{index:04d}",
-            "chunk_index": index,
-            "page_start": chunk.get("page_start"),
-            "page_end": chunk.get("page_end"),
-            "section_title": "",
-            "text": text,
-            "char_count": len(text),
-            "word_count": count_words(text),
-        }
-        rows.append({field: chunk_row.get(field, "") for field in CHUNK_FIELDS})
+    chunks: list[dict[str, Any]] = []
+    current: list[dict[str, Any]] = []
+    current_words = 0
 
+    for unit in expanded:
+        unit_words = word_count(unit["text"])
+        if current and current_words + unit_words > MAX_WORDS:
+            maybe_add_chunk(chunks, current)
+            current = overlap_units(current)
+            current_words = sum(word_count(item["text"]) for item in current)
+        current.append(unit)
+        current_words += unit_words
+        if current_words >= TARGET_WORDS:
+            maybe_add_chunk(chunks, current)
+            current = overlap_units(current)
+            current_words = sum(word_count(item["text"]) for item in current)
+
+    maybe_add_chunk(chunks, current)
+    return chunks
+
+
+def overlap_units(units: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep the tail units that approximate the overlap window."""
+    selected: list[dict[str, Any]] = []
+    total = 0
+    for unit in reversed(units):
+        selected.insert(0, unit)
+        total += word_count(unit["text"])
+        if total >= OVERLAP_WORDS:
+            break
+    return selected
+
+
+def maybe_add_chunk(chunks: list[dict[str, Any]], units: list[dict[str, Any]]) -> None:
+    """Append a chunk if it has enough useful text."""
+    if not units:
+        return
+    text = "\n\n".join(unit["text"] for unit in units).strip()
+    if word_count(text) < MIN_WORDS:
+        return
+    pages = [unit.get("page") for unit in units if unit.get("page") is not None]
+    chunks.append({"text": text, "page": min(pages) if pages else None})
+
+
+def useful_inference_chunk(text: str) -> bool:
+    """Filter references, boilerplate, and generic paragraphs where possible."""
+    normalized = one_line(text).lower()
+    if not normalized:
+        return False
+    if normalized.startswith("references") or normalized.startswith("bibliography"):
+        return any(term in normalized for term in ("method", "definition", "measure"))
+    if any(term in normalized[:500] for term in GENERIC_SKIP_TERMS):
+        return False
+    return any(term in normalized for term in METHOD_CAVEAT_TERMS)
+
+
+def should_process_source(row: dict[str, Any]) -> bool:
+    """Return True for non-statistics sources with chunking enabled."""
+    if row.get("statistics_allowed") is True:
+        return False
+    if row.get("source_id") == "nber_w31222":
+        return False
+    if row.get("chunks_allowed") is False:
+        return False
+    local_path = one_line(row.get("local_path"))
+    if not local_path:
+        return False
+    return one_line(row.get("download_status")).startswith("downloaded")
+
+
+def row_source_file(row: dict[str, Any]) -> Path:
+    """Resolve a manifest local path."""
+    return resolve_project_path(one_line(row.get("local_path")))
+
+
+def build_chunk_rows(source: dict[str, Any], chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert raw chunks into requested JSONL schema."""
+    rows: list[dict[str, Any]] = []
+    source_id = one_line(source.get("source_id"))
+    for index, chunk in enumerate(chunks, start=1):
+        text = chunk["text"]
+        if not useful_inference_chunk(text):
+            continue
+        rows.append(
+            {
+                "doc_id": stable_doc_id(source_id, index, text[:80], prefix="research_inference"),
+                "doc_type": "research_inference_chunk",
+                "source_id": source_id,
+                "source_name": one_line(source.get("source_name")) or one_line(source.get("title")),
+                "source_url": one_line(source.get("source_url")),
+                "source_file": one_line(source.get("local_path")),
+                "page": chunk.get("page"),
+                "chunk_text": text,
+                "allowed_usage": "methodology_caveat_inference_only",
+                "statistics_allowed": False,
+                "created_at": created_at(),
+            }
+        )
     return rows
 
 
-def process_source(row):
-    status = get_value(row, "status")
-    source_id = get_value(row, "source_id")
-    title = get_value(row, "title")
-    local_path_text = get_value(row, "local_path")
-
-    summary = {
-        "source_id": source_id,
-        "title": title,
-        "status": status,
-        "local_path": local_path_text,
-        "processed": False,
-        "num_chunks": 0,
-        "num_chars_extracted": 0,
-        "num_words_extracted": 0,
-        "error_message": "",
-    }
-
-    if status not in PROCESSABLE_STATUSES:
-        summary["error_message"] = f"Skipped because status is '{status}'."
-        return [], summary
-
-    path = resolve_local_path(local_path_text)
-    if path is None:
-        summary["error_message"] = "Missing local_path."
-        return [], summary
+def extract_source(source: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
+    """Extract chunks for one source, returning rows and an error message."""
+    path = row_source_file(source)
     if not path.exists():
-        summary["error_message"] = f"Local file not found: {path}"
-        return [], summary
-
+        return [], f"Local source file not found: {path}"
     try:
-        suffix = path.suffix.lower()
-
-        if suffix == ".pdf":
-            pages = extract_pdf_pages(path)
-            extracted_text = "\n\n".join(page["text"] for page in pages if page["text"].strip())
-            raw_chunks = build_chunks_from_units(
-                make_pdf_units(pages),
-                max_pages_per_chunk=MAX_PAGES_PER_PDF_CHUNK,
-            )
-        elif suffix == ".txt":
-            extracted_text = clean_text_block(read_text_snapshot(path))
-            raw_chunks = build_chunks_from_units(make_web_units(extracted_text))
-        else:
-            summary["error_message"] = f"Unsupported local file type: {suffix or '(none)'}"
-            return [], summary
-
-        summary["num_chars_extracted"] = len(extracted_text)
-        summary["num_words_extracted"] = count_words(extracted_text)
-
-        if not extracted_text.strip():
-            summary["error_message"] = "No text extracted."
-            return [], summary
-
-        chunk_rows = make_chunk_rows(row, raw_chunks)
-        summary["num_chunks"] = len(chunk_rows)
-
-        if not chunk_rows:
-            summary["error_message"] = "No chunks created after filtering short text."
-            return [], summary
-
-        summary["processed"] = True
-        return chunk_rows, summary
-
+        pages = extract_text_pages(path)
+        chunks = chunk_units(paragraph_units(pages))
+        return build_chunk_rows(source, chunks), ""
     except Exception as exc:
-        summary["error_message"] = f"{type(exc).__name__}: {exc}"
-        return [], summary
+        return [], f"{type(exc).__name__}: {exc}"
 
 
-def write_jsonl(rows, path):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as file:
-        for row in rows:
-            file.write(json.dumps(row, ensure_ascii=False) + "\n")
+def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments."""
+    parser = argparse.ArgumentParser(description="Extract research inference chunks from source manifest.")
+    parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
+    parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
+    return parser.parse_args()
 
 
-def validate_output(path=CHUNKS_JSONL, preview_count=3):
-    print("\nValidation")
+def main() -> int:
+    """Run extraction."""
+    args = parse_args()
+    manifest_path = resolve_project_path(args.manifest)
+    output_path = resolve_project_path(args.output)
+    sources = read_jsonl(manifest_path)
+    if not sources:
+        raise FileNotFoundError(f"No source manifest rows found at {manifest_path}")
 
-    if not path.exists():
-        print(f"Missing output file: {path}")
-        return False
+    all_rows: list[dict[str, Any]] = []
+    processed_sources = 0
+    skipped_sources = 0
+    errors: list[tuple[str, str]] = []
 
-    required_fields = ["chunk_id", "source_id", "text"]
-    errors = []
-    previews = []
-    total_rows = 0
+    for source in sources:
+        if not should_process_source(source):
+            skipped_sources += 1
+            continue
+        rows, error = extract_source(source)
+        if error:
+            errors.append((one_line(source.get("source_id")), error))
+        if rows:
+            processed_sources += 1
+            all_rows.extend(rows)
 
-    with path.open("r", encoding="utf-8") as file:
-        for line_number, line in enumerate(file, start=1):
-            line = line.strip()
-            if not line:
-                continue
-
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError as exc:
-                errors.append(f"Line {line_number}: invalid JSON ({exc})")
-                continue
-
-            total_rows += 1
-
-            for field in required_fields:
-                if not str(row.get(field, "")).strip():
-                    errors.append(f"Line {line_number}: missing or empty '{field}'")
-
-            if not str(row.get("text", "")).strip():
-                errors.append(f"Line {line_number}: empty text chunk")
-
-            if len(previews) < preview_count:
-                previews.append(row)
-
-    if errors:
-        print(f"Validation failed with {len(errors)} issue(s).")
-        for error in errors[:10]:
-            print(f"- {error}")
-        if len(errors) > 10:
-            print(f"- ... {len(errors) - 10} more")
-        return False
-
-    print(f"Validated {total_rows} chunk row(s).")
-    print(f"Showing first {min(preview_count, len(previews))} chunk(s):")
-
-    for row in previews:
-        title = row.get("title") or "(untitled)"
-        page_start = row.get("page_start")
-        page_end = row.get("page_end")
-
-        if page_start is None and page_end is None:
-            page_range = "web"
-        elif page_start == page_end:
-            page_range = f"page {page_start}"
-        else:
-            page_range = f"pages {page_start}-{page_end}"
-
-        excerpt = re.sub(r"\s+", " ", row.get("text", "")).strip()[:300]
-        print(f"\n{row.get('chunk_id')} | {title} | {page_range}")
-        print(excerpt)
-
-    return True
-
-
-def main():
-    if not SOURCES_CSV.exists():
-        raise FileNotFoundError(f"Metadata file not found: {SOURCES_CSV}")
-
-    sources = pd.read_csv(SOURCES_CSV, dtype=str, keep_default_na=False)
-
-    all_chunks = []
-    summary_rows = []
-
-    for _, row in sources.iterrows():
-        chunk_rows, summary = process_source(row)
-        all_chunks.extend(chunk_rows)
-        summary_rows.append(summary)
-
-    write_jsonl(all_chunks, CHUNKS_JSONL)
-    pd.DataFrame(summary_rows, columns=SUMMARY_FIELDS).to_csv(SUMMARY_CSV, index=False)
-
-    total_sources = len(sources)
-    processed_sources = sum(1 for row in summary_rows if row["processed"])
-    skipped_failed_sources = sum(
-        1 for row in summary_rows if row["status"] not in PROCESSABLE_STATUSES
-    )
-    extraction_errors = sum(
-        1
-        for row in summary_rows
-        if row["status"] in PROCESSABLE_STATUSES and not row["processed"]
-    )
-
-    print("\nResearch chunk extraction complete")
-    print(f"Total sources in metadata file: {total_sources}")
-    print(f"Successfully processed sources: {processed_sources}")
-    print(f"Skipped failed sources: {skipped_failed_sources}")
-    print(f"Sources with extraction errors: {extraction_errors}")
-    print(f"Total chunks created: {len(all_chunks)}")
-    print(f"Output path: {CHUNKS_JSONL}")
-    print(f"Summary path: {SUMMARY_CSV}")
-
-    validate_output(CHUNKS_JSONL)
+    write_jsonl(all_rows, output_path)
+    print("Research inference chunk extraction complete")
+    print(f"Manifest rows: {len(sources)}")
+    print(f"Sources processed: {processed_sources}")
+    print(f"Sources skipped by policy/status: {skipped_sources}")
+    print(f"Sources with errors: {len(errors)}")
+    print(f"Chunks written: {len(all_rows)}")
+    print(f"Output: {output_path}")
+    for source_id, error in errors[:10]:
+        print(f"Warning: {source_id}: {error}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
+

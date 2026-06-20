@@ -17,14 +17,30 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from career_rag.config import (
+    EMBEDDING_MODEL_NAME,
+    EXPECTED_EMBEDDING_DIMENSION,
+    require_hf_token,
+)
+
 
 # Configuration
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
+MODEL_NAME = EMBEDDING_MODEL_NAME
 DOCUMENTS_JSONL = Path("data/documents/onet_occupation_section_documents.jsonl")
 CHROMA_DB_PATH = Path("data/chroma_onet")
 COLLECTION_NAME = "onet_sections"
 DEFAULT_BATCH_SIZE = 50
 REBUILD_COLLECTION = os.getenv("REBUILD_COLLECTION", "false").lower() == "true"
+
+COLLECTION_METADATA = {
+    "embedding_model": MODEL_NAME,
+    "embedding_dimension": EXPECTED_EMBEDDING_DIMENSION,
+    "source_file": str(DOCUMENTS_JSONL),
+}
 
 
 def load_documents() -> Tuple[List[str], List[str], List[Dict[str, Any]]]:
@@ -115,7 +131,7 @@ def create_collection(
             if rebuild:
                 print(f"\nCollection '{collection_name}' exists. Deleting (REBUILD_COLLECTION=true)...")
                 client.delete_collection(name=collection_name)
-                collection = client.create_collection(name=collection_name)
+                collection = client.create_collection(name=collection_name, metadata=COLLECTION_METADATA)
                 print(f"Created new collection '{collection_name}'")
             else:
                 print(f"\nCollection '{collection_name}' already exists.")
@@ -123,17 +139,17 @@ def create_collection(
                 if user_input == "y":
                     print(f"Deleting collection '{collection_name}'...")
                     client.delete_collection(name=collection_name)
-                    collection = client.create_collection(name=collection_name)
+                    collection = client.create_collection(name=collection_name, metadata=COLLECTION_METADATA)
                     print(f"Created new collection '{collection_name}'")
                 else:
                     print("Keeping existing collection. Exiting.")
                     sys.exit(0)
         else:
-            collection = client.create_collection(name=collection_name)
+            collection = client.create_collection(name=collection_name, metadata=COLLECTION_METADATA)
             print(f"Created new collection '{collection_name}'")
     except Exception:
         # Collection doesn't exist, create it
-        collection = client.create_collection(name=collection_name)
+        collection = client.create_collection(name=collection_name, metadata=COLLECTION_METADATA)
         print(f"Created new collection '{collection_name}'")
     
     return collection
@@ -279,6 +295,7 @@ def main() -> None:
         
         # Load embedding model
         print(f"\nLoading embedding model: {MODEL_NAME}")
+        require_hf_token()
         model = SentenceTransformer(MODEL_NAME)
         embedding_dim = model.get_embedding_dimension()
         print(f"Model loaded. Embedding dimension: {embedding_dim}")

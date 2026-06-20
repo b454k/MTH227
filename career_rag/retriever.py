@@ -11,8 +11,22 @@ import warnings
 from pathlib import Path
 from typing import Any
 
+try:
+    from career_rag.config import (
+        EMBEDDING_MODEL_NAME,
+        require_configured_embedding_model,
+        require_hf_token,
+        validate_collection_embedding_model,
+    )
+except ImportError:  # Allows: py career_rag/retriever.py
+    from config import (  # type: ignore
+        EMBEDDING_MODEL_NAME,
+        require_configured_embedding_model,
+        require_hf_token,
+        validate_collection_embedding_model,
+    )
 
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
+MODEL_NAME = EMBEDDING_MODEL_NAME
 CHROMA_DB_PATH = "data/chroma_onet"
 
 SECTION_COLLECTION_NAME = "onet_sections"
@@ -184,7 +198,9 @@ class OnetRetriever:
         self.section_collection_name = collection_name
         self.full_collection_name = full_collection_name
         self.supplemental_collection_name = supplemental_collection_name
-        self.embedding_model_name = embedding_model_name
+        self.embedding_model_name = require_configured_embedding_model(
+            embedding_model_name
+        )
 
         try:
             import chromadb
@@ -208,6 +224,7 @@ class OnetRetriever:
                 "Expected the existing database at data/chroma_onet."
             )
 
+        require_hf_token()
         try:
             self.model = SentenceTransformer(self.embedding_model_name)
         except Exception as exc:
@@ -746,13 +763,15 @@ class OnetRetriever:
     def _load_collection(self, collection_name: str, description: str) -> Any:
         """Load a required Chroma collection with a helpful error message."""
         try:
-            return self.client.get_collection(name=collection_name)
+            collection = self.client.get_collection(name=collection_name)
         except Exception as exc:
             raise RuntimeError(
                 f"Could not find Chroma collection '{collection_name}' for "
                 f"{description} at {self.chroma_path}. Make sure the matching "
                 "embedding script has been run."
             ) from exc
+        validate_collection_embedding_model(collection, self.embedding_model_name)
+        return collection
 
     def _load_optional_collection(
         self,
@@ -761,10 +780,12 @@ class OnetRetriever:
     ) -> Any | None:
         """Load an optional Chroma collection, returning None when absent."""
         try:
-            return self.client.get_collection(name=collection_name)
+            collection = self.client.get_collection(name=collection_name)
         except Exception:
             _ = description
             return None
+        validate_collection_embedding_model(collection, self.embedding_model_name)
+        return collection
 
     def _inspect_all_collection_metadata(self) -> dict[str, dict[str, Any]]:
         """Inspect metadata keys and useful aliases for each collection."""

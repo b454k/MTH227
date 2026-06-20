@@ -21,6 +21,12 @@ ENV_PATH = PROJECT_ROOT / ".env"
 
 try:
     from career_rag.retriever import OnetRetriever, detect_query_type
+    from career_rag.ai_impact_retriever import (
+        DEFAULT_AI_COLLECTION as AI_IMPACT_COLLECTION_NAME,
+        DEFAULT_RESEARCH_COLLECTION as RESEARCH_INFERENCE_COLLECTION_NAME,
+        retrieve_ai_impact,
+        retrieve_research_inference,
+    )
     from career_rag.research_retriever import (
         DEFAULT_COLLECTION as RESEARCH_COLLECTION_NAME,
         format_pages as format_research_pages,
@@ -29,6 +35,12 @@ try:
     )
 except ImportError:  # Allows: py career_rag/generator.py
     from retriever import OnetRetriever, detect_query_type  # type: ignore
+    from ai_impact_retriever import (  # type: ignore
+        DEFAULT_AI_COLLECTION as AI_IMPACT_COLLECTION_NAME,
+        DEFAULT_RESEARCH_COLLECTION as RESEARCH_INFERENCE_COLLECTION_NAME,
+        retrieve_ai_impact,
+        retrieve_research_inference,
+    )
     from research_retriever import (  # type: ignore
         DEFAULT_COLLECTION as RESEARCH_COLLECTION_NAME,
         format_pages as format_research_pages,
@@ -41,6 +53,8 @@ DEFAULT_MODEL_NAME = "gpt-4o-mini"
 DEFAULT_MAX_CONTEXT_CHARS = 12000
 DEFAULT_K = 8
 DEFAULT_RESEARCH_TOP_K = 8
+DEFAULT_AI_IMPACT_TOP_K = 8
+DEFAULT_RESEARCH_INFERENCE_TOP_K = 4
 
 MISSING_API_KEY_MESSAGE = (
     "OPENAI_API_KEY was not found. Check that .env exists in the project root "
@@ -63,8 +77,9 @@ O*NET evidence:
 - Use it for tasks, skills, knowledge, software, education, work context, work styles, and day-to-day work.
 
 Research evidence:
-- Contains AI/labor-market impact claims from papers and reports.
-- Use it for AI impact, automation exposure, augmentation, job loss, job creation, skill change, employment effects, wage effects, productivity effects, worker vulnerability, and uncertainty.
+- Structured AI impact evidence comes only from Anthropic Economic Index and NBER Working Paper 31222.
+- Research inference chunks are only for methodology, definitions, caveats, and limitations.
+- Do not use numeric statistics from any other source.
 
 If supplemental evidence is provided, use it for:
 - occupation aliases
@@ -87,17 +102,21 @@ For career questions, prefer these sections:
 
 Strict grounding rules:
 1. Do not make AI-impact claims unless supported by research evidence.
-2. If research evidence is broad, task-level, industry-level, or general labor-market evidence rather than occupation-specific, say so clearly.
+2. Every numeric AI-impact value must come from retrieved Anthropic Economic Index or NBER W31222 metadata/evidence.
 3. Do not treat automation exposure as guaranteed job loss.
 4. Distinguish automation exposure, augmentation potential, task transformation, job loss, job creation, skill change, and worker vulnerability.
 5. Use O*NET evidence for what the occupation involves.
 6. Use research evidence for how AI may affect it.
 7. If evidence is mixed or uncertain, say so.
 8. Cite research sources using title, year, and page metadata.
+9. If evidence is task-level, occupation-level, or firm-level, state that scope.
+10. Do not make layoffs or job-disappearance claims unless retrieved evidence explicitly supports them.
 
 Useful wording for AI-impact answers:
 - The research evidence suggests exposure rather than guaranteed replacement.
 - This claim is task-level rather than occupation-specific, so it should be interpreted as an indirect signal.
+- I did not find an indexed task-level AI exposure statistic for this specific task.
+- The indexed source supports the exposure method, but does not provide a specific numeric value for this task.
 
 O*NET evidence describes occupations, tasks, skills, knowledge, work context, interests, education, and software. It does not by itself prove AI automation risk.
 """
@@ -110,17 +129,25 @@ AI_IMPACT_KEYWORDS = (
     "automation",
     "automate",
     "automated",
+    "ai exposure",
+    "replaced by ai",
     "future of work",
+    "future of this career",
     "job impact",
     "job loss",
     "job creation",
     "skill change",
     "augmentation",
+    "task impact",
     "displacement",
     "exposure",
     "replace",
     "replacement",
     "at risk",
+    "generative ai",
+    "claude",
+    "chatgpt",
+    "artificial intelligence",
 )
 
 
@@ -316,18 +343,21 @@ class CareerRAGGenerator:
         self._load_dotenv_if_available()
 
         api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError(MISSING_API_KEY_MESSAGE)
-
-        try:
-            from openai import OpenAI
-        except ImportError as exc:
-            raise RuntimeError(
-                "The OpenAI Python package is not installed. Install it with "
-                "`pip install openai` before using CareerRAGGenerator."
-            ) from exc
-
-        self.client = OpenAI(api_key=api_key)
+        self.client = None
+        self.client_setup_warning = ""
+        if api_key:
+            try:
+                from openai import OpenAI
+            except ImportError:
+                self.client_setup_warning = (
+                    "The OpenAI Python package is not installed; using fallback generation."
+                )
+            else:
+                self.client = OpenAI(api_key=api_key)
+        else:
+            self.client_setup_warning = (
+                f"{MISSING_API_KEY_MESSAGE} Using fallback generation."
+            )
         self.model_name = os.getenv("OPENAI_MODEL") or model_name
         self.use_query_rewriting = use_query_rewriting
         self.max_context_chars = max_context_chars
@@ -340,7 +370,7 @@ class CareerRAGGenerator:
         self._validate_question(user_question)
 
         fallback = self._fallback_rewrite(user_question)
-        if not self.use_query_rewriting:
+        if not self.use_query_rewriting or self.client is None:
             return fallback
 
         messages = [
@@ -499,6 +529,60 @@ class CareerRAGGenerator:
 
         return "\n\n".join(context_parts)
 
+    def format_ai_impact_context(self, evidence: list[dict[str, Any]]) -> str:
+        """Format structured AI-impact evidence for the LLM prompt."""
+        if not evidence:
+            return "No retrieved structured AI-impact evidence was found."
+
+        context_parts: list[str] = []
+        for index, item in enumerate(evidence, 1):
+            metadata = item.get("metadata") or {}
+            context_parts.append(
+                "\n".join(
+                    [
+                        f"[AI Impact Evidence A{index}]",
+                        f"Source: {self._one_line(metadata.get('source_name') or metadata.get('source_id'))}",
+                        f"Source file/release: {self._one_line(metadata.get('source_release') or metadata.get('source_file'))}",
+                        f"Page: {self._one_line(metadata.get('source_page')) or 'N/A'}",
+                        f"Doc type: {self._one_line(metadata.get('doc_type'))}",
+                        f"Occupation: {self._one_line(metadata.get('occupation_title')) or 'N/A'}",
+                        f"SOC: {self._one_line(metadata.get('soc_code')) or 'N/A'}",
+                        f"Task: {self._one_line(metadata.get('task_text')) or 'N/A'}",
+                        f"Impact type: {self._one_line(metadata.get('impact_type'))}",
+                        f"Metric: {self._one_line(metadata.get('metric_name'))} = {self._one_line(metadata.get('metric_value')) or 'N/A'} {self._metric_unit_for_display(metadata)}",
+                        f"Metric caution: {self._metric_caution(metadata)}",
+                        f"Confidence: {self._one_line(metadata.get('confidence'))}",
+                        f"Evidence: {self._one_line(item.get('text'))}",
+                    ]
+                )
+            )
+
+        return "\n\n".join(context_parts)
+
+    def format_research_inference_context(self, chunks: list[dict[str, Any]]) -> str:
+        """Format research methodology/caveat chunks for the LLM prompt."""
+        if not chunks:
+            return "No retrieved research inference evidence was found."
+
+        context_parts: list[str] = []
+        for index, item in enumerate(chunks, 1):
+            metadata = item.get("metadata") or {}
+            context_parts.append(
+                "\n".join(
+                    [
+                        f"[Research Inference C{index}]",
+                        f"Source: {self._one_line(metadata.get('source_name') or metadata.get('source_id'))}",
+                        f"Page: {self._one_line(metadata.get('source_page') or metadata.get('page')) or 'N/A'}",
+                        f"Allowed usage: {self._one_line(metadata.get('allowed_usage'))}",
+                        f"Statistics allowed: {self._one_line(metadata.get('statistics_allowed'))}",
+                        "Numeric-use rule: Do not use numbers from this block as AI-impact statistics.",
+                        f"Text: {self._redact_numbers_for_inference(self._one_line(item.get('text')))}",
+                    ]
+                )
+            )
+
+        return "\n\n".join(context_parts)
+
     def _build_expanded_research_query(
         self,
         user_question: str,
@@ -553,6 +637,466 @@ class CareerRAGGenerator:
             )
 
         return summaries
+
+    def _build_ai_impact_summary(
+        self,
+        evidence: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Build source summaries for structured AI-impact evidence."""
+        summaries: list[dict[str, Any]] = []
+        for index, item in enumerate(evidence, 1):
+            metadata = item.get("metadata") or {}
+            summaries.append(
+                {
+                    "rank": index,
+                    "collection": item.get("collection") or AI_IMPACT_COLLECTION_NAME,
+                    "source_name": metadata.get("source_name"),
+                    "source_release": metadata.get("source_release"),
+                    "source_file": metadata.get("source_file"),
+                    "page": metadata.get("source_page"),
+                    "doc_type": metadata.get("doc_type"),
+                    "occupation_title": metadata.get("occupation_title"),
+                    "soc_code": metadata.get("soc_code"),
+                    "task_text": metadata.get("task_text"),
+                    "impact_type": metadata.get("impact_type"),
+                    "metric_name": metadata.get("metric_name"),
+                    "metric_value": metadata.get("metric_value"),
+                    "metric_unit": self._metric_unit_for_display(metadata),
+                    "confidence": metadata.get("confidence"),
+                    "score": item.get("reranked_score") or item.get("score"),
+                    "distance": item.get("distance"),
+                }
+            )
+        return summaries
+
+    def _build_research_inference_summary(
+        self,
+        chunks: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Build source summaries for methodology/caveat chunks."""
+        summaries: list[dict[str, Any]] = []
+        for index, item in enumerate(chunks, 1):
+            metadata = item.get("metadata") or {}
+            summaries.append(
+                {
+                    "rank": index,
+                    "collection": item.get("collection") or RESEARCH_INFERENCE_COLLECTION_NAME,
+                    "source_name": metadata.get("source_name"),
+                    "page": metadata.get("source_page") or metadata.get("page"),
+                    "allowed_usage": metadata.get("allowed_usage"),
+                    "score": item.get("score"),
+                    "distance": item.get("distance"),
+                }
+            )
+        return summaries
+
+    def retrieve_structured_ai_evidence(
+        self,
+        user_question: str,
+        onet_evidence: list[dict[str, Any]],
+        top_k: int = DEFAULT_AI_IMPACT_TOP_K,
+    ) -> list[dict[str, Any]]:
+        """Retrieve prioritized structured AI-impact evidence."""
+        occupation_context = self._infer_occupation_context(onet_evidence)
+        query = self._build_expanded_research_query(user_question, onet_evidence)
+        try:
+            return retrieve_ai_impact(
+                query,
+                soc_code=occupation_context.get("soc_code"),
+                occupation_title=occupation_context.get("occupation_title"),
+                task_texts=occupation_context.get("task_texts") or [],
+                top_k=top_k,
+            )
+        except Exception:
+            return []
+
+    def retrieve_research_inference_evidence(
+        self,
+        user_question: str,
+        onet_evidence: list[dict[str, Any]],
+        top_k: int = DEFAULT_RESEARCH_INFERENCE_TOP_K,
+    ) -> list[dict[str, Any]]:
+        """Retrieve short methodology/caveat chunks."""
+        query = self._build_expanded_research_query(user_question, onet_evidence)
+        try:
+            return retrieve_research_inference(query, top_k=top_k)
+        except Exception:
+            return []
+
+    def _infer_occupation_context(
+        self,
+        onet_evidence: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Infer the leading occupation/SOC/tasks from retrieved O*NET evidence."""
+        title_counts: dict[str, int] = {}
+        soc_counts: dict[str, int] = {}
+        task_texts: list[str] = []
+        first_title: str | None = None
+        first_soc: str | None = None
+
+        for item in onet_evidence:
+            metadata = item.get("metadata") or {}
+            title = self._one_line(metadata.get("occupation_title"))
+            soc = self._one_line(metadata.get("onet_soc_code") or metadata.get("soc_code"))
+            if title and not first_title:
+                first_title = title
+            if soc and not first_soc:
+                first_soc = soc
+            if first_title and first_soc:
+                break
+
+        for item in onet_evidence:
+            metadata = item.get("metadata") or {}
+            title = self._one_line(metadata.get("occupation_title"))
+            soc = self._one_line(metadata.get("onet_soc_code") or metadata.get("soc_code"))
+            if title:
+                title_counts[title] = title_counts.get(title, 0) + 1
+            if soc:
+                soc_counts[soc] = soc_counts.get(soc, 0) + 1
+            if (first_soc and soc == first_soc) or (not first_soc and title == first_title):
+                task_texts.extend(self._extract_task_lines(item.get("text")))
+
+        occupation_title = first_title or (max(title_counts, key=title_counts.get) if title_counts else None)
+        soc_code = first_soc or (max(soc_counts, key=soc_counts.get) if soc_counts else None)
+        return {
+            "occupation_title": occupation_title,
+            "soc_code": soc_code,
+            "task_texts": self._dedupe_queries(task_texts)[:12],
+        }
+
+    def _extract_task_lines(self, text: Any) -> list[str]:
+        """Extract likely task statements from O*NET evidence text."""
+        lines: list[str] = []
+        for line in str(text or "").splitlines():
+            cleaned = self._one_line(line)
+            if not cleaned.startswith("- "):
+                continue
+            task = cleaned[2:].strip()
+            if len(task.split()) < 4:
+                continue
+            if ":" in task and re.match(r"^[A-Z][A-Za-z /&-]{2,40}:", task):
+                continue
+            lines.append(task)
+        return lines
+
+    def _build_ai_answer_prompt(
+        self,
+        user_question: str,
+        query_analysis: dict[str, Any],
+        onet_context: str,
+        ai_impact_context: str,
+        research_inference_context: str,
+    ) -> list[dict[str, str]]:
+        """Build the stricter prompt for AI-exposure answers."""
+        return [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": (
+                    "Answer the user's career question in about 300-500 words.\n"
+                    "Use this structure with short headings:\n"
+                    "1. Short career explanation\n"
+                    "2. Main tasks\n"
+                    "3. AI exposure by task\n"
+                    "4. Inference\n"
+                    "5. Future outlook\n"
+                    "6. Sources\n\n"
+                    "Rules:\n"
+                    "- Use O*NET evidence for what the occupation does and its tasks.\n"
+                    "- Use structured AI impact evidence for AI statistics.\n"
+                    "- Prefer Anthropic task-level rows for automation, augmentation, task penetration, observed usage, and job exposure.\n"
+                    "- Use NBER W31222 for exposure methodology, direct/indirect exposure, and core/supplemental distinctions.\n"
+                    "- Research inference chunks are only for caveats or methodology, not numeric statistics.\n"
+                    "- Do not fabricate values. Every numeric AI-impact value must appear in the structured AI evidence block.\n"
+                    "- Do not convert share/score metrics into percentages unless metric_unit is percent.\n"
+                    "- A metric value of 0.0 share means 0.0 in the indexed Anthropic measure; do not call it no AI impact, no exposure, or no automation unless impact_type is explicitly no_exposure.\n"
+                    "- For 0.0 share rows, say '0.0 share in the indexed measure'; do not say 'no current AI penetration' or imply absence of AI impact.\n"
+                    "- Do not say exposure means replacement, disappearance, layoffs, or safety from AI.\n"
+                    "- In Future outlook, discuss task change and skill adaptation only. Do not forecast demand, hiring, employment, openings, growth, or decline unless retrieved evidence explicitly says so.\n"
+                    "- Only list NBER W31222 in Sources if the answer uses a specific NBER structured claim or NBER method distinction.\n"
+                    "- In Sources, list only sources that support claims actually used in the answer.\n"
+                    "- Never use research inference chunks for numeric AI-impact claims; those chunks are only caveats/methodology.\n"
+                    "- If no indexed task-level AI exposure statistic is found for a task, say so.\n\n"
+                    f"USER QUESTION:\n{user_question}\n\n"
+                    "RETRIEVAL PLAN:\n"
+                    f"{json.dumps(query_analysis, ensure_ascii=False)}\n\n"
+                    f"RETRIEVED O*NET EVIDENCE:\n{onet_context}\n\n"
+                    f"STRUCTURED AI IMPACT EVIDENCE:\n{ai_impact_context}\n\n"
+                    f"RESEARCH INFERENCE / METHODOLOGY EVIDENCE:\n{research_inference_context}"
+                ),
+            },
+        ]
+
+    def _fallback_answer(
+        self,
+        user_question: str,
+        onet_evidence: list[dict[str, Any]],
+        ai_impact_evidence: list[dict[str, Any]],
+        research_inference: list[dict[str, Any]],
+        ai_impact_needed: bool,
+    ) -> str:
+        """Build a deterministic answer if the LLM is unavailable."""
+        occupation_context = self._infer_occupation_context(onet_evidence)
+        occupation_title = occupation_context.get("occupation_title") or "this occupation"
+        description = self._first_occupation_description(onet_evidence)
+        tasks = occupation_context.get("task_texts") or []
+        task_lines = tasks[:5]
+
+        parts = [
+            "Short career explanation",
+            description
+            or f"{occupation_title} work on the tasks and responsibilities described in the retrieved O*NET evidence.",
+            "",
+            "Main tasks",
+        ]
+        if task_lines:
+            parts.extend(f"- {task}" for task in task_lines)
+        else:
+            parts.append("- I found O*NET occupation evidence, but not a clean task list in the retrieved chunks.")
+
+        if ai_impact_needed:
+            parts.extend(["", "AI exposure by task"])
+            metric_lines = self._fallback_ai_metric_lines(ai_impact_evidence)
+            if metric_lines:
+                parts.extend(metric_lines[:5])
+            else:
+                parts.append("- I did not find an indexed task-level AI exposure statistic for this specific task.")
+
+            parts.extend(
+                [
+                    "",
+                    "Inference",
+                    "The retrieved evidence should be read as exposure or observed usage, not as proof that the occupation will be replaced. Coding, modeling, drafting, and repeatable information-processing tasks are usually the parts to inspect first; judgment-heavy communication and accountable decisions need more caution.",
+                    "",
+                    "Future outlook",
+                    "Expect task change rather than a simple job-disappearance conclusion. The safest reading is that AI may augment or automate parts of the work depending on the specific task and metric scope.",
+                    "",
+                    "Sources",
+                ]
+            )
+            source_names = self._fallback_source_names(ai_impact_evidence, research_inference)
+            parts.extend(f"- {source}" for source in source_names)
+        else:
+            parts.extend(
+                [
+                    "",
+                    "Sources",
+                    "- O*NET retrieved occupation evidence.",
+                ]
+            )
+
+        if self.client_setup_warning:
+            parts.append("")
+            parts.append(f"Note: {self.client_setup_warning}")
+        return "\n".join(parts)
+
+    def _first_occupation_description(self, onet_evidence: list[dict[str, Any]]) -> str:
+        """Extract a short occupation description from retrieved O*NET text."""
+        for item in onet_evidence:
+            text = str(item.get("text") or "")
+            for line in text.splitlines():
+                cleaned = self._one_line(line)
+                if not cleaned or cleaned.startswith("- "):
+                    continue
+                if "O*NET-SOC Code:" in cleaned or cleaned.endswith(" - Tasks"):
+                    continue
+                if len(cleaned.split()) >= 8:
+                    return self._truncate(cleaned, 280)
+        return ""
+
+    def _fallback_ai_metric_lines(
+        self,
+        ai_impact_evidence: list[dict[str, Any]],
+    ) -> list[str]:
+        """Format direct metric lines for fallback generation."""
+        lines: list[str] = []
+        for item in ai_impact_evidence:
+            metadata = item.get("metadata") or {}
+            source = self._one_line(metadata.get("source_name") or metadata.get("source_id"))
+            task = self._one_line(metadata.get("task_text")) or "occupation-level evidence"
+            metric_name = self._one_line(metadata.get("metric_name"))
+            metric_value = self._one_line(metadata.get("metric_value"))
+            metric_unit = self._metric_unit_for_display(metadata)
+            impact_type = self._one_line(metadata.get("impact_type"))
+            if metric_name and metric_value:
+                caution = ""
+                if self._metric_caution(metadata).startswith("0.0 share"):
+                    caution = " This is not by itself evidence of no AI impact."
+                lines.append(
+                    f"- For {task}, {source} reports {impact_type} metric {metric_name} = {metric_value} {metric_unit}.{caution}".rstrip()
+                )
+            elif source:
+                lines.append(
+                    f"- {source} provides {impact_type or 'methodology'} evidence for {task}, but no specific numeric value is available in this row."
+                )
+        return lines
+
+    def _fallback_source_names(
+        self,
+        ai_impact_evidence: list[dict[str, Any]],
+        research_inference: list[dict[str, Any]],
+    ) -> list[str]:
+        """Collect compact source names for fallback answers."""
+        sources: list[str] = []
+        for item in ai_impact_evidence + research_inference:
+            metadata = item.get("metadata") or {}
+            source = self._one_line(metadata.get("source_name") or metadata.get("source_id"))
+            if source and source not in sources:
+                sources.append(source)
+        return sources or ["O*NET retrieved occupation evidence."]
+
+    def _postprocess_ai_answer(self, answer: str, ai_impact_needed: bool) -> str:
+        """Apply final wording guards for structured AI-impact answers."""
+        if not ai_impact_needed or not answer:
+            return answer
+        guarded = self._guard_zero_share_language(answer)
+        guarded = self._guard_labor_demand_forecasts(guarded)
+        guarded = self._remove_unused_nber_source(guarded)
+        return guarded
+
+    @staticmethod
+    def _guard_zero_share_language(answer: str) -> str:
+        """Keep 0.0 share wording scoped to the indexed metric."""
+        replacements = [
+            (
+                r"\bno current AI penetration\b",
+                "0.0 share in the indexed measure",
+            ),
+            (
+                r"\bno observed AI penetration\b",
+                "0.0 share in the indexed measure",
+            ),
+            (
+                r"\bno significant AI penetration\b",
+                "low or zero indexed penetration in the retrieved measure",
+            ),
+            (
+                r"\bno current AI exposure\b",
+                "0.0 share in the indexed exposure measure",
+            ),
+            (
+                r"\bnot currently exposed to AI\b",
+                "reported as 0.0 share in the indexed measure",
+            ),
+        ]
+        guarded = answer
+        for pattern, replacement in replacements:
+            guarded = re.sub(pattern, replacement, guarded, flags=re.IGNORECASE)
+        return guarded
+
+    @staticmethod
+    def _guard_labor_demand_forecasts(answer: str) -> str:
+        """Replace unsupported labor-market forecasts in the outlook section."""
+        lines = answer.splitlines()
+        guarded_lines: list[str] = []
+        in_future_outlook = False
+        section_names = {
+            "shortcareerexplanation",
+            "maintasks",
+            "aiexposurebytask",
+            "inference",
+            "futureoutlook",
+            "sources",
+        }
+        labor_terms = re.compile(
+            r"\b(demand|employment|job openings|openings|hiring|jobs?)\b",
+            flags=re.IGNORECASE,
+        )
+        forecast_terms = re.compile(
+            r"\b(will|likely|expected|projected|increase|decrease|grow|growth|"
+            r"shrink|decline|rise|fall|expand|contract)\b",
+            flags=re.IGNORECASE,
+        )
+        replacement = (
+            "The retrieved evidence supports task-change discussion, not a "
+            "labor-market demand forecast."
+        )
+        for line in lines:
+            stripped = line.strip()
+            heading_key = re.sub(r"[^a-z]", "", stripped.lower())
+            if heading_key in section_names:
+                in_future_outlook = heading_key == "futureoutlook"
+
+            if (
+                in_future_outlook
+                and labor_terms.search(stripped)
+                and forecast_terms.search(stripped)
+            ):
+                prefix_match = re.match(r"^(\s*(?:[-*]\s*)?)", line)
+                prefix = prefix_match.group(1) if prefix_match else ""
+                guarded_lines.append(f"{prefix}{replacement}")
+                continue
+            guarded_lines.append(line)
+        return "\n".join(guarded_lines)
+
+    @staticmethod
+    def _remove_unused_nber_source(answer: str) -> str:
+        """Omit NBER from Sources when no NBER claim is used in the body."""
+        lines = answer.splitlines()
+        sources_index: int | None = None
+        for index, line in enumerate(lines):
+            heading_key = re.sub(r"[^a-z]", "", line.strip().lower())
+            if heading_key == "sources":
+                sources_index = index
+                break
+        if sources_index is None:
+            return answer
+
+        body = "\n".join(lines[:sources_index])
+        nber_marker = re.compile(r"\b(nber|w31222)\b", flags=re.IGNORECASE)
+        nber_specific_terms = re.compile(
+            r"\b(direct exposure|indirect exposure|"
+            r"core task exposure|supplemental task exposure|core/supplemental|"
+            r"core and supplemental|firm exposure|firm value|firm valuation|"
+            r"highest-exposure quintile|job postings|hourly wage|labor demand|"
+            r"analyst forecasts|profitability|abnormal returns|"
+            r"exposure methodology|method distinction)\b",
+            flags=re.IGNORECASE,
+        )
+        if nber_marker.search(body) and nber_specific_terms.search(body):
+            return answer
+
+        filtered_lines = [
+            line
+            for index, line in enumerate(lines)
+            if not (
+                index > sources_index
+                and re.search(r"\b(nber|w31222)\b", line, flags=re.IGNORECASE)
+            )
+        ]
+        return "\n".join(filtered_lines)
+
+    def _metric_unit_for_display(self, metadata: dict[str, Any]) -> str:
+        """Display conservative units for common AI metric names."""
+        unit = self._one_line(metadata.get("metric_unit"))
+        if unit:
+            return unit
+        metric_name = self._one_line(metadata.get("metric_name")).lower()
+        impact_type = self._one_line(metadata.get("impact_type")).lower()
+        if "penetration" in metric_name or "penetration" in impact_type:
+            return "share"
+        if "exposure" in metric_name or "exposure" in impact_type:
+            return "share"
+        return ""
+
+    def _metric_caution(self, metadata: dict[str, Any]) -> str:
+        """Return caution text for metric interpretation."""
+        metric_value = self._one_line(metadata.get("metric_value"))
+        impact_type = self._one_line(metadata.get("impact_type")).lower()
+        unit = self._metric_unit_for_display(metadata)
+        if metric_value in {"0", "0.0", "0.00"} and unit == "share":
+            return (
+                "0.0 share is the value in the indexed measure; it does not by "
+                "itself prove no AI impact or no future exposure."
+            )
+        if impact_type == "no_exposure":
+            return "This row is explicitly labeled no_exposure by the source extraction."
+        return "Use the metric only in its source scope."
+
+    @staticmethod
+    def _redact_numbers_for_inference(text: str) -> str:
+        """Prevent research inference chunks from supplying numeric AI-impact claims."""
+        return re.sub(r"(?<![A-Za-z])[-+]?\d+(?:[.,]\d+)*(?:\.\d+)?%?", "[number omitted]", text)
 
     @staticmethod
     def _research_rank_value(claim: dict[str, Any]) -> float:
@@ -633,8 +1177,10 @@ class CareerRAGGenerator:
 
         rewrite_result = self.rewrite_query(user_question)
         query_analysis = self._build_query_analysis(user_question, rewrite_result)
-        research_needed = bool(use_research or query_analysis.get("ai_impact_query"))
-        query_analysis["use_research"] = research_needed
+        ai_impact_needed = bool(query_analysis.get("ai_impact_query"))
+        old_research_needed = bool(use_research and not ai_impact_needed)
+        query_analysis["use_research"] = bool(old_research_needed or ai_impact_needed)
+        query_analysis["use_structured_ai_impact"] = ai_impact_needed
         self.last_rewrite_result = rewrite_result
         self.last_query_analysis = query_analysis
 
@@ -646,9 +1192,57 @@ class CareerRAGGenerator:
         context = self.format_context(evidence)
         research_claims: list[dict[str, Any]] = []
         research_context = "No retrieved research evidence was requested."
+        ai_impact_evidence: list[dict[str, Any]] = []
+        ai_impact_context = "No structured AI-impact evidence was requested."
+        research_inference: list[dict[str, Any]] = []
+        research_inference_context = "No research inference evidence was requested."
         expanded_research_query = ""
 
-        if research_needed:
+        if ai_impact_needed:
+            ai_impact_evidence = self.retrieve_structured_ai_evidence(
+                user_question=user_question,
+                onet_evidence=evidence,
+                top_k=research_top_k,
+            )
+            research_inference = self.retrieve_research_inference_evidence(
+                user_question=user_question,
+                onet_evidence=evidence,
+                top_k=DEFAULT_RESEARCH_INFERENCE_TOP_K,
+            )
+            expanded_research_query = self._build_expanded_research_query(
+                user_question,
+                evidence,
+            )
+            ai_impact_context = self.format_ai_impact_context(ai_impact_evidence)
+            research_inference_context = self.format_research_inference_context(
+                research_inference
+            )
+            messages = self._build_ai_answer_prompt(
+                user_question=user_question,
+                query_analysis=query_analysis,
+                onet_context=context,
+                ai_impact_context=ai_impact_context,
+                research_inference_context=research_inference_context,
+            )
+        else:
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": (
+                        "Answer the user's question using the retrieved evidence "
+                        "below. Use O*NET evidence for what the occupation involves "
+                        "and research evidence for AI-impact claims.\n\n"
+                        f"USER QUESTION:\n{user_question}\n\n"
+                        "RETRIEVAL PLAN:\n"
+                        f"{json.dumps(query_analysis, ensure_ascii=False)}\n\n"
+                        f"RETRIEVED O*NET EVIDENCE:\n{context}\n\n"
+                        f"RETRIEVED RESEARCH EVIDENCE:\n{research_context}"
+                    ),
+                },
+            ]
+
+        if old_research_needed:
             research_claims = self.retrieve_research_evidence(
                 user_question=user_question,
                 onet_evidence=evidence,
@@ -659,25 +1253,22 @@ class CareerRAGGenerator:
                 evidence,
             )
             research_context = self.format_research_context(research_claims)
+            messages[1]["content"] = messages[1]["content"].replace(
+                "RETRIEVED RESEARCH EVIDENCE:\nNo retrieved research evidence was requested.",
+                f"RETRIEVED RESEARCH EVIDENCE:\n{research_context}",
+            )
 
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": (
-                    "Answer the user's question using the retrieved evidence "
-                    "below. Use O*NET evidence for what the occupation involves "
-                    "and research evidence for AI-impact claims.\n\n"
-                    f"USER QUESTION:\n{user_question}\n\n"
-                    "RETRIEVAL PLAN:\n"
-                    f"{json.dumps(query_analysis, ensure_ascii=False)}\n\n"
-                    f"RETRIEVED O*NET EVIDENCE:\n{context}\n\n"
-                    f"RETRIEVED RESEARCH EVIDENCE:\n{research_context}"
-                ),
-            },
-        ]
-
-        answer = self._chat_completion(messages=messages, temperature=0.2)
+        try:
+            answer = self._chat_completion(messages=messages, temperature=0.2)
+        except Exception:
+            answer = self._fallback_answer(
+                user_question=user_question,
+                onet_evidence=evidence,
+                ai_impact_evidence=ai_impact_evidence,
+                research_inference=research_inference,
+                ai_impact_needed=ai_impact_needed,
+            )
+        answer = self._postprocess_ai_answer(answer, ai_impact_needed=ai_impact_needed)
 
         return {
             "question": user_question,
@@ -688,7 +1279,14 @@ class CareerRAGGenerator:
             "evidence_summary": self._build_evidence_summary(evidence),
             "research_claims": research_claims,
             "research_summary": self._build_research_summary(research_claims),
-            "used_research": research_needed,
+            "ai_impact_evidence": ai_impact_evidence,
+            "ai_impact_summary": self._build_ai_impact_summary(ai_impact_evidence),
+            "research_inference": research_inference,
+            "research_inference_summary": self._build_research_inference_summary(
+                research_inference
+            ),
+            "used_research": bool(old_research_needed or ai_impact_needed),
+            "used_structured_ai_impact": ai_impact_needed,
             "expanded_research_query": expanded_research_query,
         }
 
@@ -1008,6 +1606,9 @@ class CareerRAGGenerator:
         response_format_json: bool = False,
     ) -> str:
         """Call the OpenAI chat completions API and return message content."""
+        if self.client is None:
+            raise RuntimeError(self.client_setup_warning or "OpenAI client is not available.")
+
         kwargs: dict[str, Any] = {
             "model": self.model_name,
             "messages": messages,
@@ -1269,21 +1870,65 @@ def print_answer(result: dict[str, Any], show_sources: bool = False) -> None:
     print(result["answer"])
 
     if show_sources:
-        print("\nRETRIEVED SOURCES:")
+        print("\n=== O*NET SOURCES ===")
+        print("collection | occupation title | SOC code | section | score")
         for source in result.get("evidence_summary", []):
             print(
-                f"{source['rank']}. "
                 f"{source.get('collection') or 'N/A'} | "
-                f"{source.get('doc_type') or 'N/A'} | "
                 f"{source.get('occupation_title') or 'N/A'} | "
+                f"{source.get('onet_soc_code') or 'N/A'} | "
                 f"{source.get('section') or 'N/A'} | "
-                f"{float(source.get('score') or 0.0):.4f} | "
-                f"{source.get('id') or 'N/A'}"
+                f"{float(source.get('score') or 0.0):.4f}"
             )
+
+        ai_sources = result.get("ai_impact_summary") or []
+        if ai_sources:
+            print("\n=== AI IMPACT EVIDENCE ===")
+            print(
+                "collection | source | release/file | page | doc_type | "
+                "occupation | SOC | task | impact_type | metric | value | unit | "
+                "confidence | score"
+            )
+            for source in ai_sources:
+                release_or_file = source.get("source_release") or source.get("source_file") or "N/A"
+                metric_value = (
+                    source.get("metric_value")
+                    if source.get("metric_value") not in (None, "")
+                    else "N/A"
+                )
+                print(
+                    f"{source.get('collection') or 'N/A'} | "
+                    f"{source.get('source_name') or 'N/A'} | "
+                    f"{release_or_file} | "
+                    f"{source.get('page') or 'N/A'} | "
+                    f"{source.get('doc_type') or 'N/A'} | "
+                    f"{source.get('occupation_title') or 'N/A'} | "
+                    f"{source.get('soc_code') or 'N/A'} | "
+                    f"{source.get('task_text') or 'N/A'} | "
+                    f"{source.get('impact_type') or 'N/A'} | "
+                    f"{source.get('metric_name') or 'N/A'} | "
+                    f"{metric_value} | "
+                    f"{source.get('metric_unit') or 'N/A'} | "
+                    f"{source.get('confidence') or 'N/A'} | "
+                    f"{float(source.get('score') or 0.0):.4f}"
+                )
+
+        inference_sources = result.get("research_inference_summary") or []
+        if inference_sources:
+            print("\n=== RESEARCH INFERENCE ===")
+            print("collection | source | page | allowed_usage | score")
+            for source in inference_sources:
+                print(
+                    f"{source.get('collection') or 'N/A'} | "
+                    f"{source.get('source_name') or 'N/A'} | "
+                    f"{source.get('page') or 'N/A'} | "
+                    f"{source.get('allowed_usage') or 'N/A'} | "
+                    f"{float(source.get('score') or 0.0):.4f}"
+                )
 
         research_sources = result.get("research_summary") or []
         if research_sources:
-            print("\n=== RESEARCH SOURCES ===")
+            print("\n=== LEGACY RESEARCH CLAIM SOURCES ===")
             print(
                 "collection | claim_id | title | year | pages | "
                 "impact_type_clean | impact_direction_clean | ai_relevance | "
@@ -1311,7 +1956,7 @@ def _get_query_from_args(args: argparse.Namespace) -> str:
     elif args.question:
         query = " ".join(args.question).strip()
     else:
-        query = input("Enter your career question:\n").strip()
+        query = input("Enter your career question: ").strip()
 
     if not query:
         raise ValueError("Query cannot be empty.")

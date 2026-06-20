@@ -15,16 +15,32 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
+try:
+    from career_rag.config import (
+        BGE_QUERY_PREFIX,
+        EMBEDDING_MODEL_NAME,
+        EXPECTED_EMBEDDING_DIMENSION,
+        embedding_model_mismatch_message,
+        require_configured_embedding_model,
+        require_hf_token,
+    )
+except ImportError:  # Allows: py career_rag/embed_ai_impact_claims.py
+    from config import (  # type: ignore
+        BGE_QUERY_PREFIX,
+        EMBEDDING_MODEL_NAME,
+        EXPECTED_EMBEDDING_DIMENSION,
+        embedding_model_mismatch_message,
+        require_configured_embedding_model,
+        require_hf_token,
+    )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_INPUT = PROJECT_ROOT / "data" / "research" / "ai_impact_claims.jsonl"
 DEFAULT_PERSIST_DIR = PROJECT_ROOT / "chroma_research"
 DEFAULT_COLLECTION = "research_ai_impact_claims"
-DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
+DEFAULT_MODEL = EMBEDDING_MODEL_NAME
 DEFAULT_BATCH_SIZE = 64
-EXPECTED_EMBEDDING_DIMENSION = 384
-BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 METADATA_FIELDS = [
     "claim_id",
@@ -263,6 +279,8 @@ def prepare_documents(claims: list[dict[str, Any]]) -> tuple[list[str], list[str
 
 def load_model(model_name: str) -> SentenceTransformer:
     """Load the requested sentence-transformer model."""
+    model_name = require_configured_embedding_model(model_name)
+    require_hf_token()
     print(f"Loading embedding model: {model_name}")
     model = SentenceTransformer(model_name)
     dimension = get_embedding_dimension(model)
@@ -365,11 +383,14 @@ def create_or_replace_collection(
     existing_model = clean_string(existing_metadata.get("embedding_model"))
     expected_model = clean_string(metadata.get("embedding_model"))
     if existing_model and existing_model != expected_model:
-        print(
-            f"Warning: existing collection metadata says embedding_model={existing_model}; "
-            f"expected {expected_model}. Recreate the collection before querying.",
-            file=sys.stderr,
-        )
+        if not recreate:
+            raise RuntimeError(
+                embedding_model_mismatch_message(
+                    collection_name,
+                    existing_model,
+                    expected_model,
+                )
+            )
 
     if recreate:
         print(
@@ -492,10 +513,12 @@ def validate_collection(
     metadata_model = clean_string(metadata.get("embedding_model"))
     print(f"Collection metadata model: {metadata_model or '(missing)'}")
     if metadata_model != expected_model:
-        print(
-            f"Warning: collection metadata says embedding_model={metadata_model or '(missing)'}; "
-            f"expected {expected_model}.",
-            file=sys.stderr,
+        raise RuntimeError(
+            embedding_model_mismatch_message(
+                collection_name,
+                metadata_model,
+                expected_model,
+            )
         )
     if actual_dimension != EXPECTED_EMBEDDING_DIMENSION:
         print(
@@ -519,7 +542,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", default=str(DEFAULT_INPUT))
     parser.add_argument("--persist-dir", default=str(DEFAULT_PERSIST_DIR))
     parser.add_argument("--collection", default=DEFAULT_COLLECTION)
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--model", default=DEFAULT_MODEL, choices=[DEFAULT_MODEL])
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument(
         "--reset-persist-dir",
