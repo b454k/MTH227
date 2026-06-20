@@ -17,6 +17,7 @@ from career_rag.ip_final_report import (
     get_onet_occupation_details,
     load_profile_result,
 )
+from career_rag.interest_profiler_local import build_profile_result
 from career_rag.occupation_aliases import build_occupation_index, resolve_career_alias
 
 
@@ -65,6 +66,27 @@ def main() -> int:
 
     assert report.get("sources"), "Report sources should not be empty."
     assert FINAL_REPORT_JSON_PATH.exists(), "Report JSON was not saved."
+
+    consistency_profile = build_profile_result(
+        scores={
+            "Realistic": 1,
+            "Investigative": 4,
+            "Artistic": 2,
+            "Social": 4,
+            "Enterprising": 2,
+            "Conventional": 0,
+        },
+        current_job_zone=4,
+        future_job_zone=5,
+        career_matches=None,
+    )
+    consistency_report = build_final_career_report(consistency_profile, top_k=1)
+    profile_used = consistency_report["profile_used"]
+    assert profile_used["initial_code"] == consistency_profile["holland_code"] == "ISA"
+    assert profile_used["final_code"] == "ISA"
+    assert profile_used["current_zone"] == 4
+    assert profile_used["future_zone"] == 5
+    assert profile_used["preferences_used"] == []
 
     print("Final career report smoke test passed.")
     print(f"Top matches: {', '.join(titles)}")

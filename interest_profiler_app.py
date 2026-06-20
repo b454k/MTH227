@@ -116,6 +116,87 @@ def _reset_followup_state() -> None:
     st.session_state["ip_followup_answers"] = []
 
 
+def _set_profile_result(result: dict[str, Any], source: str) -> None:
+    st.session_state["profile_result"] = result
+    st.session_state["ip_profile_result"] = result
+    st.session_state["profile_result_source"] = source
+
+
+def _clear_old_final_report_state() -> None:
+    st.session_state["final_report"] = None
+    st.session_state["ip_final_career_report"] = None
+    st.session_state["followup_answers"] = None
+    st.session_state["ip_followup_answers"] = None
+
+
+def _load_profile_result_from_json() -> dict[str, Any] | None:
+    if not RESULT_PATH.exists():
+        return None
+    try:
+        with RESULT_PATH.open("r", encoding="utf-8") as file:
+            value = json.load(file)
+    except (OSError, json.JSONDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _get_current_profile_result() -> tuple[dict[str, Any] | None, str]:
+    result = st.session_state.get("profile_result")
+    if isinstance(result, dict):
+        return result, "session_state"
+
+    legacy_result = st.session_state.get("ip_profile_result")
+    if isinstance(legacy_result, dict):
+        _set_profile_result(legacy_result, "session_state")
+        return legacy_result, "session_state"
+
+    saved_result = _load_profile_result_from_json()
+    if saved_result:
+        _set_profile_result(saved_result, "JSON")
+        return saved_result, "JSON"
+    return None, "none"
+
+
+def _render_profile_source_debug(source: str, result: dict[str, Any]) -> None:
+    st.caption(
+        "Profile source used: "
+        f"{source}; profile_id={result.get('profile_id', '(missing)')}; "
+        f"timestamp={result.get('timestamp', '(missing)')}"
+    )
+
+
+def _has_followup_answer(result: dict[str, Any]) -> bool:
+    followup = result.get("followup_refinement") or {}
+    return bool(followup.get("questions_asked"))
+
+
+def _validate_report_matches_profile(report: dict[str, Any], profile_result: dict[str, Any]) -> list[str]:
+    profile_used = report.get("profile_used") or {}
+    expected_initial = str(
+        profile_result.get("holland_code")
+        or profile_result.get("initial_code")
+        or profile_result.get("initial_holland_code")
+        or ""
+    )
+    expected_current = int(profile_result.get("current_job_zone") or 0)
+    expected_future = int(profile_result.get("future_job_zone") or 0)
+    actual_initial = str(profile_used.get("initial_code") or profile_used.get("initial_holland_code") or "")
+    actual_current = int(profile_used.get("current_zone") or profile_used.get("current_job_zone") or 0)
+    actual_future = int(profile_used.get("future_zone") or profile_used.get("future_job_zone") or 0)
+    actual_final = str(profile_used.get("final_code") or profile_used.get("final_holland_code") or "")
+
+    errors = []
+    if actual_initial != expected_initial:
+        errors.append(f"initial_code mismatch: report={actual_initial}, profile={expected_initial}")
+    if actual_current != expected_current:
+        errors.append(f"current_zone mismatch: report={actual_current}, profile={expected_current}")
+    if actual_future != expected_future:
+        errors.append(f"future_zone mismatch: report={actual_future}, profile={expected_future}")
+    if not _has_followup_answer(profile_result) and actual_final != expected_initial:
+        errors.append(f"final_code mismatch without follow-up: report={actual_final}, initial={expected_initial}")
+    return errors
+
+
 def _render_initial_form(questions: list[dict[str, Any]], career_listings: list[dict[str, Any]]) -> None:
     grouped_questions = _group_questions_by_interest(questions)
 
@@ -173,15 +254,16 @@ def _render_initial_form(questions: list[dict[str, Any]], career_listings: list[
         future_job_zone=future_job_zone,
         career_matches=career_matches,
     )
+    _clear_old_final_report_state()
     save_profile_result(result, RESULT_PATH)
-    st.session_state["ip_profile_result"] = result
+    _set_profile_result(result, "session_state")
     _reset_followup_state()
     st.success(f"Saved profile result to {Path(RESULT_PATH).as_posix()}")
 
 
 def _render_profile_result(result: dict[str, Any], career_listings: list[dict[str, Any]]) -> None:
-    scores = result["raw_riasec_scores"]
-    top_interests = result["initial_top_interests"]
+    scores = result.get("riasec_scores") or result["raw_riasec_scores"]
+    top_interests = result.get("top_interests") or result["initial_top_interests"]
     current_job_zone = int(result["current_job_zone"])
     future_job_zone = int(result["future_job_zone"])
     career_matches = result["career_matches"]
@@ -199,7 +281,7 @@ def _render_profile_result(result: dict[str, Any], career_listings: list[dict[st
 
     st.subheader("Top 3 Interests")
     st.write(", ".join(top_interests))
-    st.metric("Holland Code", result["initial_holland_code"])
+    st.metric("Holland Code", result.get("holland_code") or result["initial_holland_code"])
 
     zone_columns = st.columns(2)
     zone_columns[0].metric("Current Job Zone", _format_job_zone(current_job_zone))
@@ -235,11 +317,11 @@ def _render_profile_result(result: dict[str, Any], career_listings: list[dict[st
     )
 
     _render_followup(result)
-    _render_final_report_section(st.session_state.get("ip_profile_result", result))
+    _render_final_report_section(st.session_state.get("profile_result", result))
 
     st.download_button(
         "Download JSON Result",
-        data=json.dumps(st.session_state.get("ip_profile_result", result), indent=2, ensure_ascii=True),
+        data=json.dumps(st.session_state.get("profile_result", result), indent=2, ensure_ascii=True),
         file_name="ip_profile_result.json",
         mime="application/json",
     )
@@ -291,7 +373,9 @@ def _render_followup_question(result: dict[str, Any]) -> None:
         refinement = complete_followup_refinement(result, questions_asked)
         updated = update_profile_with_followup(result, refinement)
         save_profile_result(updated, RESULT_PATH)
-        st.session_state["ip_profile_result"] = updated
+        _set_profile_result(updated, "session_state")
+        st.session_state["final_report"] = None
+        st.session_state["ip_final_career_report"] = None
         st.session_state["ip_followup_active"] = False
         st.session_state["ip_followup_complete"] = True
         st.rerun()
@@ -312,6 +396,7 @@ def _render_followup_question(result: dict[str, Any]) -> None:
     updated_plan, updated_answers = record_followup_answer(question_plan, questions_asked, answer)
     st.session_state["ip_followup_plan"] = updated_plan
     st.session_state["ip_followup_answers"] = updated_answers
+    st.session_state["followup_answers"] = updated_answers
     st.rerun()
 
 
@@ -341,7 +426,7 @@ def _show_followup_refinement(followup_refinement: dict[str, Any]) -> None:
         st.write(f"Job Zone to use: {_format_job_zone(int(guidance['job_zone_to_use']))}")
 
     with st.expander("Structured profile prepared for later RAG integration"):
-        profile_for_rag = prepare_profile_for_rag(st.session_state["ip_profile_result"])
+        profile_for_rag = prepare_profile_for_rag(st.session_state["profile_result"])
         st.json(profile_for_rag)
 
 
@@ -367,13 +452,25 @@ def _render_final_report_section(result: dict[str, Any]) -> None:
         with st.spinner("Retrieving O*NET and AI-impact evidence..."):
             try:
                 report = build_final_career_report(result, top_k=10)
+                validation_errors = _validate_report_matches_profile(report, result)
+                if validation_errors:
+                    st.error("Final report validation failed: " + "; ".join(validation_errors))
+                    return
             except Exception as exc:
                 st.error(f"Could not generate the final career report: {exc}")
                 return
+        st.session_state["final_report"] = report
         st.session_state["ip_final_career_report"] = report
         st.success(f"Saved final report to {Path(FINAL_REPORT_PATH).as_posix()}")
 
-    report = st.session_state.get("ip_final_career_report") or _load_saved_final_report()
+    report = st.session_state.get("final_report") or st.session_state.get("ip_final_career_report")
+    if not report and not result:
+        report = _load_saved_final_report()
+    if report:
+        validation_errors = _validate_report_matches_profile(report, result)
+        if validation_errors:
+            st.warning("Hidden stale final report because it does not match the current profile: " + "; ".join(validation_errors))
+            return
     if report:
         render_final_career_report(report)
 
@@ -386,8 +483,9 @@ def main() -> None:
     career_listings = _load_career_listings()
 
     _render_initial_form(questions, career_listings)
-    result = st.session_state.get("ip_profile_result")
+    result, source = _get_current_profile_result()
     if result:
+        _render_profile_source_debug(source, result)
         _render_profile_result(result, career_listings)
 
 

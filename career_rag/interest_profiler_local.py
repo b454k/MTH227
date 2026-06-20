@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 
 RIASEC_INTERESTS = [
@@ -221,17 +223,28 @@ def build_profile_result(
     canonical_scores = _canonical_scores(scores)
     top_interests = get_top_interests(canonical_scores, top_n=3)
     holland_code = make_holland_code(top_interests)
+    timestamp = datetime.now(timezone.utc).isoformat()
+    profile_id = uuid4().hex
 
     return {
         "source": PROFILE_SOURCE,
+        "profile_id": profile_id,
+        "timestamp": timestamp,
+        "riasec_scores": canonical_scores,
         "raw_riasec_scores": canonical_scores,
         "score_ambiguity": detect_ambiguous_categories(canonical_scores),
+        "top_interests": top_interests,
         "initial_top_interests": top_interests,
+        "holland_code": holland_code,
+        "initial_code": holland_code,
         "initial_holland_code": holland_code,
         "current_job_zone": _validate_job_zone(current_job_zone),
         "future_job_zone": _validate_job_zone(future_job_zone),
         "career_matches": _normalize_career_matches(career_matches),
         "followup_refinement": None,
+        "refined_interests": top_interests,
+        "final_code": holland_code,
+        "preferences_used": [],
         "final_top_interests": top_interests,
         "final_holland_code": holland_code,
         "ready_for_rag": True,
@@ -252,6 +265,9 @@ def update_profile_with_followup(
 
     updated["final_top_interests"] = [canonical_interest(interest) for interest in refined_top]
     updated["final_holland_code"] = str(refined_holland)
+    updated["refined_interests"] = updated["final_top_interests"]
+    updated["final_code"] = updated["final_holland_code"]
+    updated["preferences_used"] = list(final_refinement.get("key_sub_preferences") or [])
     updated["ready_for_rag"] = True
     return updated
 
@@ -280,16 +296,31 @@ def _flatten_career_titles(career_matches: dict[str, Any]) -> list[str]:
 
 def prepare_profile_for_rag(profile_result: dict[str, Any]) -> dict[str, Any]:
     """Prepare structured profile context for later career RAG integration."""
-    raw_scores = profile_result.get("raw_riasec_scores") or profile_result.get("riasec_scores") or {}
+    raw_scores = profile_result.get("riasec_scores") or profile_result.get("raw_riasec_scores") or {}
     scores = _canonical_scores(raw_scores)
 
     followup_refinement = profile_result.get("followup_refinement")
     if followup_refinement:
-        top_interests = profile_result.get("final_top_interests") or profile_result.get("initial_top_interests")
-        holland_code = profile_result.get("final_holland_code") or profile_result.get("initial_holland_code")
+        top_interests = (
+            profile_result.get("refined_interests")
+            or profile_result.get("final_top_interests")
+            or profile_result.get("top_interests")
+            or profile_result.get("initial_top_interests")
+        )
+        holland_code = (
+            profile_result.get("final_code")
+            or profile_result.get("final_holland_code")
+            or profile_result.get("holland_code")
+            or profile_result.get("initial_holland_code")
+        )
     else:
-        top_interests = profile_result.get("initial_top_interests") or get_top_interests(scores, top_n=3)
-        holland_code = profile_result.get("initial_holland_code") or make_holland_code(top_interests)
+        top_interests = profile_result.get("top_interests") or profile_result.get("initial_top_interests") or get_top_interests(scores, top_n=3)
+        holland_code = (
+            profile_result.get("holland_code")
+            or profile_result.get("initial_code")
+            or profile_result.get("initial_holland_code")
+            or make_holland_code(top_interests)
+        )
 
     top_interests = [canonical_interest(interest) for interest in top_interests]
     holland_code = str(holland_code or make_holland_code(top_interests))
@@ -322,4 +353,3 @@ def prepare_profile_for_rag(profile_result: dict[str, Any]) -> dict[str, Any]:
         "career_titles_to_retrieve": career_titles,
         "profile_summary_for_prompt": " ".join(summary_parts),
     }
-

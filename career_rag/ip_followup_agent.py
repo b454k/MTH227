@@ -449,6 +449,14 @@ def complete_followup_refinement(
     provider: OpenAIChatProvider | None = None,
 ) -> dict[str, Any]:
     """Return the saved follow-up refinement object."""
+    if not questions_asked:
+        return {
+            "method": "initial_result_no_followup",
+            "questions_asked": [],
+            "final_refinement": build_template_refinement(profile_result, []),
+            "json_valid": True,
+        }
+
     provider = provider or OpenAIChatProvider()
     if provider.available:
         final_refinement, json_valid, raw_response, error = _llm_final_refinement(
@@ -494,8 +502,6 @@ def build_template_refinement(
         for item in deepening_answers
         if item.get("answer")
     ][:5]
-    if not key_sub_preferences:
-        key_sub_preferences = ["Follow-up answers recorded for later review."]
 
     concerns_noted = []
     if len(future_answers) >= 2 and future_answers[1].get("answer"):

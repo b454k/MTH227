@@ -32,30 +32,8 @@ You generate personalized career reports from retrieved evidence.
 You must ground factual claims in the provided evidence.
 You must not invent O*NET facts, education requirements, AI exposure statistics, or occupation titles.
 If evidence is missing, say it is not available or mark the point as an inference.
-Use the user's stated preferences:
-
-* technology
-* analytical thinking
-* math/problem solving
-* fast-paced short projects
-* starting their own thing
-* teaching/guiding but not people-heavy work
-* lower social interaction preference
-
-The report should prioritize roles that combine:
-
-* data/analytics
-* technology
-* quantitative reasoning
-* business problem solving
-* project variety
-* future Job Zone 4 preparation
-
-Required first three display titles:
-
-1. Data Analyst
-2. Actuary
-3. Machine Learning Engineer
+Use only the submitted Interest Profiler result and actual follow-up answers.
+Do not add technology, math, fast-paced, entrepreneurship, or other preferences unless they came from user answers.
 
 Maximum top matches: 10.
 
@@ -417,32 +395,36 @@ def _build_profile_used(profile_input: dict[str, Any], ip_marker: str) -> dict[s
     )
     initial_holland = str(initial_holland or prepared.get("holland_code") or "")
 
-    final_refinement = (
-        (profile_input.get("followup_refinement") or {}).get("final_refinement") or {}
-        if is_raw_profile
-        else {}
-    )
+    followup_refinement = profile_input.get("followup_refinement") or {} if is_raw_profile else {}
+    questions_asked = list(followup_refinement.get("questions_asked") or [])
+    final_refinement = (followup_refinement.get("final_refinement") or {}) if questions_asked else {}
     raw_sub_preferences = list(final_refinement.get("key_sub_preferences") or [])
-    if not raw_sub_preferences:
-        raw_sub_preferences = _extract_preferences_from_summary(
-            str(prepared.get("profile_summary_for_prompt") or "")
-        )
 
     sub_preferences = _normalize_sub_preferences(raw_sub_preferences)
     initial_top = list(prepared.get("top_interests") or [])
     final_top = list(final_refinement.get("refined_top_interests") or initial_top)
-    if _preferences_suggest_analytics(sub_preferences):
-        final_top = _analytics_weighted_interests(final_top)
     final_holland = make_holland_code(final_top[:3]) if final_top else str(prepared.get("holland_code") or "")
 
     guidance = final_refinement.get("career_matching_guidance") or {}
+    current_job_zone = int(prepared.get("current_job_zone") or 0)
+    future_job_zone = int(prepared.get("future_job_zone") or 0)
     return {
+        "profile_id": profile_input.get("profile_id"),
+        "timestamp": profile_input.get("timestamp"),
         "riasec_scores": raw_scores,
+        "top_interests": initial_top[:3],
+        "holland_code": initial_holland,
+        "initial_code": initial_holland,
         "initial_holland_code": initial_holland,
         "final_top_interests": final_top[:3],
+        "refined_interests": final_top[:3],
+        "final_code": final_holland,
         "final_holland_code": final_holland,
-        "current_job_zone": int(prepared.get("current_job_zone") or 0),
-        "future_job_zone": int(prepared.get("future_job_zone") or 0),
+        "current_zone": current_job_zone,
+        "future_zone": future_job_zone,
+        "current_job_zone": current_job_zone,
+        "future_job_zone": future_job_zone,
+        "preferences_used": sub_preferences,
         "sub_preferences": sub_preferences,
         "future_vision_summary": str(final_refinement.get("future_vision_summary") or "").strip(),
         "concerns_noted": list(final_refinement.get("concerns_noted") or []),
@@ -678,6 +660,8 @@ def _fetch_related(conn: Any, code: str, limit: int) -> list[str]:
 def _normalize_sub_preferences(values: list[Any]) -> list[str]:
     text = " ".join(str(item) for item in values).lower()
     preferences = []
+    if not text.strip():
+        return []
     if "technology" in text or "tech" in text:
         preferences.append("technology")
     if "data" in text or "math" in text or "analyt" in text or "problem" in text or "technology" in text:
@@ -693,30 +677,7 @@ def _normalize_sub_preferences(values: list[Any]) -> list[str]:
         preferences.append("lower social interaction than people-heavy careers")
     if "ai" in text:
         preferences.append("AI-aware career planning")
-    if not preferences:
-        preferences = ["follow-up preferences recorded for career matching"]
     return _dedupe_text(preferences)
-
-
-def _extract_preferences_from_summary(summary: str) -> list[str]:
-    if "Follow-up sub-preferences:" not in summary:
-        return []
-    after = summary.split("Follow-up sub-preferences:", 1)[1]
-    before = after.split("Career matching guidance:", 1)[0]
-    return [item.strip(" .") for item in before.split(";") if item.strip()]
-
-
-def _preferences_suggest_analytics(sub_preferences: list[str]) -> bool:
-    text = " ".join(sub_preferences).lower()
-    return any(keyword in text for keyword in ("technology", "analytical", "math", "problem solving"))
-
-
-def _analytics_weighted_interests(existing: list[str]) -> list[str]:
-    ordered = []
-    for interest in ["Enterprising", "Investigative", "Realistic", "Conventional", "Social", "Artistic"]:
-        if interest in existing or interest in {"Investigative", "Conventional"}:
-            ordered.append(interest)
-    return _dedupe_text(ordered)[:3]
 
 
 def _why_it_fits(display_title: str, profile_used: dict[str, Any]) -> list[str]:
@@ -735,7 +696,9 @@ def _why_it_fits(display_title: str, profile_used: dict[str, Any]) -> list[str]:
         bullets.append("It can involve less continuous people-facing interaction than many Social-heavy career paths.")
 
     if not bullets:
-        bullets.append(f"This role fits the future Job Zone and profile preferences recorded after the Interest Profiler. {marker}")
+        interests = ", ".join(profile_used.get("final_top_interests") or profile_used.get("top_interests") or [])
+        zone = profile_used.get("future_job_zone") or profile_used.get("future_zone")
+        bullets.append(f"This role is included using the submitted Interest Profiler result ({interests}) and future Job Zone {zone}. {marker}")
 
     if "Actuary" in display_title and len(bullets) < 4:
         bullets.append("It adds a strong quantitative risk path without requiring a fully people-centered workday.")
