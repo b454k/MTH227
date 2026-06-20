@@ -12,7 +12,8 @@ import pandas as pd
 import fitz  # PyMuPDF
 
 
-BASE_DIR = Path("data/research")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BASE_DIR = PROJECT_ROOT / "data" / "research"
 SOURCES_CSV = BASE_DIR / "research_sources.csv"
 OUTPUT_CSV = BASE_DIR / "research_sources_enriched.csv"
 

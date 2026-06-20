@@ -14,11 +14,13 @@ from career_rag.interest_profiler_local import (
     prepare_profile_for_rag,
 )
 from career_rag.ip_ai_impact import build_ai_impact_for_occupation
+from career_rag.ip_career_matcher import load_ip_career_listings, match_careers
 from career_rag.occupation_aliases import build_occupation_index, resolve_career_alias
 
 
 DATA_DIR = PROJECT_ROOT / "onet_interest_profiler"
 PROFILE_RESULT_PATH = DATA_DIR / "ip_profile_result.json"
+CAREER_LISTINGS_PATH = DATA_DIR / "ip_career_listings.json"
 FINAL_REPORT_JSON_PATH = DATA_DIR / "ip_final_career_report.json"
 FINAL_REPORT_MD_PATH = DATA_DIR / "ip_final_career_report.md"
 DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
@@ -26,6 +28,25 @@ DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
 IP_SHORT_FORM_URL = "https://www.onetcenter.org/dl_tools/ipsf/Interest_Profiler.pdf"
 IP_CAREER_LISTINGS_URL = "https://www.onetcenter.org/dl_tools/ipsf/IP_Career_Listings.pdf"
 ONET_IP_RESOURCE_URL = "https://www.onetcenter.org/IP.html"
+
+FOUNDATIONAL_SOFT_SKILLS = {
+    "active listening",
+    "active learning",
+    "reading comprehension",
+    "writing",
+    "speaking",
+    "social perceptiveness",
+    "monitoring",
+    "coordination",
+}
+
+JOB_ZONE_PREPARATION_EXPLANATIONS = {
+    1: "no experience required",
+    2: "high school diploma required",
+    3: "associate's degree or vocational training required",
+    4: "bachelor's degree required",
+    5: "graduate degree required",
+}
 
 FINAL_REPORT_SYSTEM_PROMPT = """You are a careful career guidance assistant.
 You generate personalized career reports from retrieved evidence.
@@ -52,51 +73,6 @@ Do not include markdown inside JSON unless needed for short text fields.
 Use citation IDs like [1], [2] inside strings where appropriate.
 Do not include raw source URLs inside main text; sources are listed separately.
 """
-
-FALLBACK_RANKING = [
-    "Data Analyst",
-    "Actuary",
-    "Machine Learning Engineer",
-    "Data Scientist",
-    "Business Intelligence Analyst",
-    "Operations Research Analyst",
-    "Statistician",
-    "Financial Quantitative Analyst",
-    "Information Technology Project Manager",
-    "Search Marketing Strategist",
-]
-
-ALTERNATIVE_TITLES = [
-    "Operations Research Analyst",
-    "Business Intelligence Analyst",
-    "Statistician",
-    "Financial Quantitative Analyst",
-    "Information Technology Project Manager",
-]
-
-CORE_SKILLS = [
-    "SQL",
-    "Python",
-    "statistics",
-    "Excel/spreadsheets",
-    "data visualization",
-    "communication of insights",
-    "domain knowledge",
-]
-
-JOB_SPECIFIC_SKILLS = {
-    "Data Analyst": ["dashboard design", "business metrics", "data cleaning workflows"],
-    "Actuary": ["probability", "actuarial exams", "risk modeling", "insurance/finance domain knowledge"],
-    "Machine Learning Engineer": ["machine learning basics", "model evaluation", "software engineering", "data ethics"],
-    "Data Scientist": ["machine learning basics", "experimental design", "feature engineering"],
-    "Business Intelligence Analyst": ["BI tools", "data modeling", "KPI design"],
-    "Operations Research Analyst": ["optimization", "simulation", "linear programming"],
-    "Statistician": ["statistical inference", "experimental design", "survey methods"],
-    "Financial Quantitative Analyst": ["financial mathematics", "risk modeling", "time-series analysis"],
-    "Information Technology Project Manager": ["agile delivery", "technical planning", "stakeholder management"],
-    "Search Marketing Strategist": ["analytics platforms", "A/B testing", "SEO/SEM metrics"],
-}
-
 
 class CitationManager:
     """Assign stable numeric citations to report sources."""
@@ -167,12 +143,15 @@ def build_final_career_report(profile_for_rag: dict[str, Any], top_k: int = 10) 
 
     profile_used = _build_profile_used(profile_for_rag, citation_manager.marker(ip_source_id))
     occupation_index = build_occupation_index(DB_PATH)
+    candidate_titles = _candidate_titles_from_profile(profile_for_rag)
 
     top_matches: list[dict[str, Any]] = []
     used_soc_codes: set[str] = set()
-    for display_title in FALLBACK_RANKING:
+    used_candidate_titles: set[str] = set()
+    for display_title in candidate_titles:
         if len(top_matches) >= top_k:
             break
+        used_candidate_titles.add(_title_key(display_title))
         resolution = resolve_career_alias(display_title, occupation_index)
         soc_code = resolution.get("onet_soc_code")
         if not soc_code:
@@ -197,16 +176,18 @@ def build_final_career_report(profile_for_rag: dict[str, Any], top_k: int = 10) 
         )
 
     alternatives = _build_alternative_careers(
+        candidate_titles=candidate_titles,
         occupation_index=occupation_index,
         citation_manager=citation_manager,
         top_soc_codes=used_soc_codes,
+        used_candidate_titles=used_candidate_titles,
     )
 
     report = {
         "report_generation_method": "template_fallback",
         "llm_system_prompt_available": True,
         "profile_used": profile_used,
-        "core_skills_across_matches": CORE_SKILLS,
+        "core_skills_across_matches": _core_skills_from_matches(top_matches),
         "top_matches": top_matches,
         "alternative_careers": alternatives,
         "sources": citation_manager.sources(),
@@ -256,19 +237,21 @@ def get_onet_occupation_details(
                 note=f"O*NET-SOC {code}",
             )
         citation = citation_manager.marker(source_id) if citation_manager else ""
+        task_records = _fetch_task_records(conn, str(code), limit=6)
 
         details = {
             "occupation_title": str(title),
             "onet_soc_code": str(code),
             "description": _with_marker(description, citation),
-            "tasks": _with_marker_list(_fetch_tasks(conn, str(code), limit=6), citation),
-            "skills": _with_marker_list(_fetch_element_names(conn, "essential_skills", str(code), limit=6), citation),
-            "knowledge": _with_marker_list(_fetch_element_names(conn, "knowledge", str(code), limit=5), citation),
+            "tasks": _with_marker_list([item["task"] for item in task_records], citation),
+            "task_records": task_records,
+            "skills": _with_marker_list(_fetch_element_names(conn, "essential_skills", str(code), limit=12), citation),
+            "knowledge": _with_marker_list(_fetch_element_names(conn, "knowledge", str(code), limit=8), citation),
             "abilities": _with_marker_list(_fetch_element_names(conn, "abilities", str(code), limit=5), citation),
             "education": _with_marker_list(_fetch_education(conn, str(code), limit=4), citation),
             "job_zone": _fetch_job_zone(conn, str(code), citation),
             "work_context": _with_marker_list(_fetch_work_context(conn, str(code), limit=5), citation),
-            "software": _with_marker_list(_fetch_software(conn, str(code), limit=8), citation),
+            "software": _with_marker_list(_fetch_software(conn, str(code), limit=16), citation),
             "related_occupations": _with_marker_list(_fetch_related(conn, str(code), limit=5), citation),
             "citation": citation,
         }
@@ -338,14 +321,17 @@ def report_to_markdown(report: dict[str, Any]) -> str:
             ]
         )
         for row in match.get("ai_impact", {}).get("task_breakdown") or []:
+            score = row.get("score_display")
+            if not score:
+                score = "N/A" if row.get("score") is None else str(row.get("score"))
             lines.append(
                 f"- {row.get('task')}: {row.get('automation_level')} "
-                f"({row.get('score')}, {row.get('score_type')}) - {row.get('evidence')}"
+                f"({score}, {row.get('score_type')}) - {row.get('evidence')}"
             )
         lines.extend(
             [
                 "",
-                f"Skills to learn: {', '.join(match.get('skills_to_learn') or [])}",
+                f"Key skills: {', '.join(_flatten_key_skills(match.get('key_skills') or {}))}",
                 f"Education needed: {match.get('education_needed')}",
                 f"Day in the life: {match.get('day_in_the_life')}",
             ]
@@ -353,7 +339,9 @@ def report_to_markdown(report: dict[str, Any]) -> str:
 
     lines.extend(["", "## Alternative Careers"])
     for item in report.get("alternative_careers") or []:
-        lines.append(f"- {item.get('title')}: {item.get('reason')}")
+        zone = (item.get("job_zone") or {}).get("zone")
+        zone_text = f" Job Zone {zone}." if zone else ""
+        lines.append(f"- {item.get('title')}:{zone_text} {item.get('reason')}")
 
     lines.extend(["", "## Sources"])
     for source in report.get("sources") or []:
@@ -398,9 +386,13 @@ def _build_profile_used(profile_input: dict[str, Any], ip_marker: str) -> dict[s
     followup_refinement = profile_input.get("followup_refinement") or {} if is_raw_profile else {}
     questions_asked = list(followup_refinement.get("questions_asked") or [])
     final_refinement = (followup_refinement.get("final_refinement") or {}) if questions_asked else {}
-    raw_sub_preferences = list(final_refinement.get("key_sub_preferences") or [])
+    raw_sub_preferences = list(
+        profile_input.get("preferences_used")
+        or final_refinement.get("key_sub_preferences")
+        or []
+    )
 
-    sub_preferences = _normalize_sub_preferences(raw_sub_preferences)
+    sub_preferences = _dedupe_text(raw_sub_preferences) or _normalize_sub_preferences(raw_sub_preferences)
     initial_top = list(prepared.get("top_interests") or [])
     final_top = list(final_refinement.get("refined_top_interests") or initial_top)
     final_holland = make_holland_code(final_top[:3]) if final_top else str(prepared.get("holland_code") or "")
@@ -434,6 +426,83 @@ def _build_profile_used(profile_input: dict[str, Any], ip_marker: str) -> dict[s
     }
 
 
+def _candidate_titles_from_profile(profile_input: dict[str, Any]) -> list[str]:
+    """Return report candidates from the submitted profile's matched careers."""
+    final_ranked = profile_input.get("final_ranked_matches") or profile_input.get("refined_career_matches") or []
+    final_titles = [
+        str(item.get("career_title") or item.get("title") or "").strip()
+        for item in final_ranked
+        if isinstance(item, dict) and str(item.get("career_title") or item.get("title") or "").strip()
+    ]
+    if final_titles:
+        return _dedupe_text(final_titles)
+
+    titles = _candidate_titles_from_current_interests(profile_input)
+    if titles:
+        return titles
+
+    career_matches = profile_input.get("career_matches") or {}
+    ordered_keys = [
+        "primary_future_zone",
+        "primary_current_zone",
+        "secondary_future_zone",
+        "tertiary_future_zone",
+    ]
+
+    titles = []
+    for key in ordered_keys:
+        for career in career_matches.get(key, []) or []:
+            title = str(career.get("career_title") or "").strip()
+            if title:
+                titles.append(title)
+
+    if not titles:
+        prepared = prepare_profile_for_rag(profile_input) if "raw_riasec_scores" in profile_input else dict(profile_input)
+        titles.extend(str(title).strip() for title in prepared.get("career_titles_to_retrieve") or [])
+
+    return _dedupe_text(titles)
+
+
+def _candidate_titles_from_current_interests(profile_input: dict[str, Any]) -> list[str]:
+    try:
+        listings = load_ip_career_listings(CAREER_LISTINGS_PATH)
+    except (OSError, ValueError):
+        return []
+
+    top_interests = (
+        profile_input.get("refined_interests")
+        or profile_input.get("final_top_interests")
+        or profile_input.get("top_interests")
+        or profile_input.get("initial_top_interests")
+        or []
+    )
+    top_interests = [str(interest) for interest in top_interests][:3]
+    if not top_interests:
+        return []
+
+    try:
+        current_zone = int(profile_input.get("current_job_zone") or 0)
+        future_zone = int(profile_input.get("future_job_zone") or 0)
+    except (TypeError, ValueError):
+        return []
+
+    groups: list[tuple[str, int]] = [(top_interests[0], future_zone), (top_interests[0], current_zone)]
+    groups.extend((interest, future_zone) for interest in top_interests[1:])
+
+    titles: list[str] = []
+    for interest, zone in groups:
+        try:
+            matches = match_careers(listings, interest, zone)
+        except ValueError:
+            continue
+        titles.extend(str(item.get("career_title") or "").strip() for item in matches)
+    return _dedupe_text(titles)
+
+
+def _title_key(title: Any) -> str:
+    return re.sub(r"\s+", " ", str(title or "").strip()).lower()
+
+
 def _build_match(
     rank: int,
     display_title: str,
@@ -448,7 +517,9 @@ def _build_match(
         display_title=display_title,
         resolved_onet_title=resolved_title,
         onet_soc_code=soc_code,
-        onet_tasks=[_strip_marker(item) for item in details.get("tasks", [])],
+        onet_tasks=details.get("task_records") or [
+            _strip_marker(item) for item in details.get("tasks", [])
+        ],
         citation_manager=citation_manager,
     )
     fit_score = max(0.72, 0.96 - (rank - 1) * 0.025)
@@ -469,19 +540,23 @@ def _build_match(
         "why_it_fits": _why_it_fits(display_title, profile_used),
         "onet_details": details,
         "ai_impact": ai_impact,
-        "skills_to_learn": _skills_to_learn(display_title, details),
+        "key_skills": _key_skills(details),
         "education_needed": _education_needed(details),
-        "day_in_the_life": _day_in_life(display_title, resolved_title),
+        "day_in_the_life": _day_in_life(details),
     }
 
 
 def _build_alternative_careers(
+    candidate_titles: list[str],
     occupation_index: list[dict[str, Any]],
     citation_manager: CitationManager,
     top_soc_codes: set[str],
+    used_candidate_titles: set[str],
 ) -> list[dict[str, Any]]:
     alternatives: list[dict[str, Any]] = []
-    for title in ALTERNATIVE_TITLES:
+    for title in candidate_titles:
+        if _title_key(title) in used_candidate_titles:
+            continue
         resolution = resolve_career_alias(title, occupation_index)
         soc_code = resolution.get("onet_soc_code")
         if not soc_code:
@@ -491,9 +566,10 @@ def _build_alternative_careers(
             title=f"O*NET occupation data - {resolved_title}",
             source_type="onet",
             local_file="data/duckdb/onet.duckdb",
-            retrieved_section="occupation title and O*NET-SOC alias resolution",
+            retrieved_section="occupation title, O*NET-SOC alias resolution, and job zone",
             note=f"O*NET-SOC {soc_code}",
         )
+        job_zone = _get_job_zone_for_soc(str(soc_code), citation_manager.marker(citation_id))
         reason = _alternative_reason(title)
         if soc_code in top_soc_codes:
             reason = f"Also relevant as a nearby title: {reason[0].lower() + reason[1:]}"
@@ -502,6 +578,7 @@ def _build_alternative_careers(
                 "title": title,
                 "resolved_onet_title": resolved_title,
                 "onet_soc_code": soc_code,
+                "job_zone": job_zone,
                 "reason": f"{reason} [{citation_id}]",
             }
         )
@@ -510,10 +587,10 @@ def _build_alternative_careers(
     return alternatives
 
 
-def _fetch_tasks(conn: Any, code: str, limit: int) -> list[str]:
+def _fetch_task_records(conn: Any, code: str, limit: int) -> list[dict[str, Any]]:
     rows = conn.execute(
         """
-        SELECT task
+        SELECT task_id, task, task_type
         FROM task_statements
         WHERE onetsoc_code = ?
         ORDER BY task_id
@@ -521,7 +598,29 @@ def _fetch_tasks(conn: Any, code: str, limit: int) -> list[str]:
         """,
         [code, limit],
     ).fetchall()
-    return _dedupe_text(row[0] for row in rows)
+    records = []
+    seen_tasks: set[str] = set()
+    for task_id, task, task_type in rows:
+        task_text = re.sub(r"\s+", " ", str(task or "")).strip()
+        if not task_text:
+            continue
+        task_key = task_text.lower()
+        if task_key in seen_tasks:
+            continue
+        seen_tasks.add(task_key)
+        records.append(
+            {
+                "onet_soc_code": str(code),
+                "task_id": _task_id_string(task_id),
+                "task": task_text,
+                "task_type": re.sub(r"\s+", " ", str(task_type or "")).strip() or None,
+            }
+        )
+    return records
+
+
+def _fetch_tasks(conn: Any, code: str, limit: int) -> list[str]:
+    return [item["task"] for item in _fetch_task_records(conn, code, limit)]
 
 
 def _fetch_element_names(conn: Any, table_name: str, code: str, limit: int) -> list[str]:
@@ -592,6 +691,21 @@ def _fetch_job_zone(conn: Any, code: str, citation: str) -> dict[str, Any]:
     }
 
 
+def _get_job_zone_for_soc(onet_soc_code: str, citation: str = "") -> dict[str, Any]:
+    try:
+        import duckdb
+    except ImportError:
+        return {}
+    if not DB_PATH.exists():
+        return {}
+
+    conn = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        return _fetch_job_zone(conn, str(onet_soc_code), citation)
+    finally:
+        conn.close()
+
+
 def _fetch_work_context(conn: Any, code: str, limit: int) -> list[str]:
     rows = conn.execute(
         """
@@ -625,7 +739,9 @@ def _fetch_software(conn: Any, code: str, limit: int) -> list[str]:
         FROM software_skills
         WHERE onetsoc_code = ?
             AND workplace_example IS NOT NULL
-        ORDER BY workplace_example
+        ORDER BY
+            CASE WHEN UPPER(COALESCE(in_demand, '')) = 'Y' THEN 0 ELSE 1 END,
+            workplace_example
         LIMIT ?
         """,
         [code, limit],
@@ -680,49 +796,76 @@ def _normalize_sub_preferences(values: list[Any]) -> list[str]:
     return _dedupe_text(preferences)
 
 
+def _core_skills_from_matches(top_matches: list[dict[str, Any]]) -> list[str]:
+    values: list[str] = []
+    for match in top_matches:
+        details = match.get("onet_details") or {}
+        values.extend(_strip_marker(item) for item in details.get("skills") or [])
+        values.extend(_strip_marker(item) for item in details.get("knowledge") or [])
+    return _dedupe_text(values)[:10]
+
+
 def _why_it_fits(display_title: str, profile_used: dict[str, Any]) -> list[str]:
     marker = profile_used.get("profile_citation") or ""
     preferences = set(profile_used.get("sub_preferences") or [])
+    preference_text = " ".join(preferences).lower()
     bullets = []
-    if "technology" in preferences:
+    if "technology" in preferences or "technology" in preference_text:
         bullets.append(f"You said you prefer technology, and this path keeps the work close to technical systems and tools. {marker}")
-    if "math and analytical work" in preferences or "analytical thinking and problem solving" in preferences:
+    if (
+        "math and analytical work" in preferences
+        or "analytical thinking and problem solving" in preferences
+        or "data" in preference_text
+        or "research" in preference_text
+        or "problem" in preference_text
+    ):
         bullets.append("The role uses analytical thinking, data, math, or structured problem solving.")
-    if "fast-paced short projects" in preferences:
+    if "fast-paced short projects" in preferences or "fast-paced" in preference_text:
         bullets.append("It can support fast-paced project work where you solve several smaller problems over time.")
-    if "starting own thing" in preferences:
+    if "starting own thing" in preferences or "leading" in preference_text:
         bullets.append("The skill set can transfer into independent consulting, product ideas, or building your own project.")
-    if "lower social interaction than people-heavy careers" in preferences:
+    if "lower social interaction than people-heavy careers" in preferences or "lower social" in preference_text:
         bullets.append("It can involve less continuous people-facing interaction than many Social-heavy career paths.")
 
     if not bullets:
         interests = ", ".join(profile_used.get("final_top_interests") or profile_used.get("top_interests") or [])
         zone = profile_used.get("future_job_zone") or profile_used.get("future_zone")
         bullets.append(f"This role is included using the submitted Interest Profiler result ({interests}) and future Job Zone {zone}. {marker}")
-
-    if "Actuary" in display_title and len(bullets) < 4:
-        bullets.append("It adds a strong quantitative risk path without requiring a fully people-centered workday.")
-    if "Machine Learning" in display_title and len(bullets) < 4:
-        bullets.append("It connects technology, problem solving, and project-based experimentation.")
     return bullets[:4]
 
 
-def _skills_to_learn(display_title: str, details: dict[str, Any]) -> list[str]:
-    skills = list(JOB_SPECIFIC_SKILLS.get(display_title, []))
-    if "Data" in display_title or "Business Intelligence" in display_title:
-        skills = ["SQL", "Python", "statistics", *skills]
-    elif "Actuary" in display_title:
-        skills = ["statistics", "Excel/spreadsheets", *skills]
-    elif "Machine Learning" in display_title:
-        skills = ["Python", "statistics", *skills]
-    else:
-        skills = [*skills, "communication of insights"]
+def _key_skills(details: dict[str, Any]) -> dict[str, list[str]]:
+    raw_skills = list(details.get("skills") or [])
+    software = _dedupe_text(details.get("software") or [])[:16]
+    knowledge = _dedupe_text(details.get("knowledge") or [])[:8]
 
-    software = [_strip_marker(item) for item in details.get("software", [])]
-    for tool in software[:2]:
-        if tool and tool not in skills:
-            skills.append(tool)
-    return _dedupe_text(skills)[:8]
+    foundational = []
+    technical = []
+    for skill in raw_skills:
+        key = _strip_marker(skill).lower()
+        if key in FOUNDATIONAL_SOFT_SKILLS:
+            foundational.append(skill)
+        else:
+            technical.append(skill)
+
+    return {
+        "software_tools": software,
+        "technical_and_domain": _dedupe_text(technical)[:10],
+        "foundational_communication": _dedupe_text(foundational)[:8],
+        "knowledge_areas": knowledge,
+    }
+
+
+def _flatten_key_skills(grouped: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    for key in (
+        "software_tools",
+        "technical_and_domain",
+        "knowledge_areas",
+        "foundational_communication",
+    ):
+        values.extend(str(item) for item in grouped.get(key) or [])
+    return _dedupe_text(values)[:18]
 
 
 def _education_needed(details: dict[str, Any]) -> str:
@@ -733,44 +876,29 @@ def _education_needed(details: dict[str, Any]) -> str:
     zone_education = job_zone.get("education") or ""
     education_text = "; ".join(education[:2]) if education else "specific degree mix not available in the retrieved rows"
     if zone:
+        explanation = JOB_ZONE_PREPARATION_EXPLANATIONS.get(int(zone), "preparation level unavailable")
         return (
-            f"O*NET lists this occupation as Job Zone {zone} ({zone_name}). "
-            f"Common preparation: {zone_education}. Education rows include: {education_text}."
+            f"O*NET places this occupation in Job Zone {zone} ({explanation}). "
+            f"The source label is {zone_name}. Typical preparation is described as: {zone_education}. "
+            f"Education rows also show: {education_text}."
         )
-    return f"Education information was limited in the retrieved local O*NET rows. Education rows include: {education_text}."
+    return f"Education information was limited in the retrieved O*NET rows. Education rows show: {education_text}."
 
 
-def _day_in_life(display_title: str, resolved_title: str) -> str:
-    if "Actuary" in display_title:
-        return (
-            "Illustrative inference: a day may involve checking assumptions, updating risk models, reviewing results with a manager, and documenting why a pricing or reserve recommendation makes sense."
-        )
-    if "Machine Learning" in display_title:
-        return (
-            "Illustrative inference: a day may involve preparing data, running experiments, debugging model behavior, reading technical notes, and deciding whether a model is useful enough to deploy."
-        )
-    if "Project Manager" in display_title:
-        return (
-            "Illustrative inference: a day may involve clarifying priorities, checking delivery risks, translating technical blockers, and keeping a fast-moving project aligned."
-        )
-    if "Search Marketing" in display_title:
-        return (
-            "Illustrative inference: a day may involve checking campaign metrics, testing content or keyword ideas, and turning performance data into next actions."
-        )
-    return (
-        "Illustrative inference: a day may involve cleaning data, writing queries, building a small report or model, checking results, and explaining the business meaning of the findings."
-    )
+def _day_in_life(details: dict[str, Any]) -> str:
+    tasks = [_strip_marker(item) for item in details.get("tasks") or []][:3]
+    contexts = [_strip_marker(item) for item in details.get("work_context") or []][:2]
+    if not tasks:
+        return "My inference: the day-to-day shape is hard to pin down from the retrieved rows, so I would treat this as a role that needs more occupation-specific research before deciding."
+    task_text = "; ".join(tasks)
+    context_text = "; ".join(contexts)
+    if context_text:
+        return f"My inference: a realistic day would likely revolve around {task_text}. The work context points to {context_text}, so the job probably rewards someone who can stay organized while making practical judgments."
+    return f"My inference: a realistic day would likely revolve around {task_text}. That makes this feel like a role where the work is defined less by one big task and more by steady judgment across several recurring responsibilities."
 
 
 def _alternative_reason(title: str) -> str:
-    reasons = {
-        "Operations Research Analyst": "Uses math, optimization, and analytical problem solving for business and operational decisions.",
-        "Business Intelligence Analyst": "Connects data analysis with dashboards, business metrics, and practical recommendations.",
-        "Statistician": "Keeps the work quantitative and evidence-focused with strong data interpretation.",
-        "Financial Quantitative Analyst": "Combines math, finance, and analytical modeling in a business-facing path.",
-        "Information Technology Project Manager": "Keeps the technology/business mix and fast-paced projects, with more coordination work.",
-    }
-    return reasons.get(title, "Related local O*NET evidence matched this analytical/business-facing direction.")
+    return f"Also appeared in the submitted Interest Profiler career matches: {title}."
 
 
 def _fit_label(fit_score: float) -> str:
@@ -796,6 +924,13 @@ def _with_marker_list(values: list[str], marker: str) -> list[str]:
 
 def _strip_marker(value: Any) -> str:
     return re.sub(r"\s*\[\d+\]\s*$", "", str(value or "")).strip()
+
+
+def _task_id_string(value: Any) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if re.fullmatch(r"\d+\.0+", text):
+        return text.split(".", 1)[0]
+    return text
 
 
 def _dedupe_text(values: Any) -> list[str]:

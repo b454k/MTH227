@@ -15,7 +15,7 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ARCHIVE_DIR = PROJECT_ROOT / "data_archives"
 BUNDLE_STEM = "career_rag_data_bundle"
 DEFAULT_INCLUDE_PATHS = (

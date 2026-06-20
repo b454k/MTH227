@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 import streamlit as st
@@ -40,6 +39,20 @@ CAREER_LISTINGS_PATH = DATA_DIR / "ip_career_listings.json"
 RESULT_PATH = DATA_DIR / "ip_profile_result.json"
 FINAL_REPORT_PATH = FINAL_REPORT_JSON_PATH
 
+JOB_ZONE_PREPARATION_EXPLANATIONS = {
+    1: "no experience required",
+    2: "high school diploma required",
+    3: "associate's degree or vocational training required",
+    4: "bachelor's degree required",
+    5: "graduate degree required",
+}
+
+INTEREST_RANK_LABELS = {
+    0: "top interest",
+    1: "second interest",
+    2: "third interest",
+}
+
 
 @st.cache_data
 def _load_questions() -> list[dict[str, Any]]:
@@ -61,7 +74,29 @@ def _group_questions_by_interest(questions: list[dict[str, Any]]) -> dict[str, l
 
 
 def _format_job_zone(zone: int) -> str:
-    return f"{zone} - {JOB_ZONE_LABELS[int(zone)]}"
+    zone = int(zone)
+    return f"{zone} - {JOB_ZONE_LABELS[zone]} ({_job_zone_explanation(zone)})"
+
+
+def _job_zone_explanation(zone: Any) -> str:
+    try:
+        zone_int = int(zone)
+    except (TypeError, ValueError):
+        return "preparation level unavailable"
+    return JOB_ZONE_PREPARATION_EXPLANATIONS.get(zone_int, "preparation level unavailable")
+
+
+def _job_zone_title(zone: Any) -> str:
+    try:
+        zone_int = int(zone)
+    except (TypeError, ValueError):
+        return "Job Zone unavailable"
+    return f"Job Zone {zone_int} ({_job_zone_explanation(zone_int)})"
+
+
+def _match_table_title(interest: str, rank_index: int, job_zone: int) -> str:
+    rank_label = INTEREST_RANK_LABELS.get(rank_index, "interest")
+    return f"{interest} ({rank_label}) + {_job_zone_title(job_zone)}"
 
 
 def _score_rows(scores: dict[str, int]) -> list[dict[str, int | str]]:
@@ -71,21 +106,11 @@ def _score_rows(scores: dict[str, int]) -> list[dict[str, int | str]]:
 def _career_rows(careers: list[dict[str, Any]], nearby: bool = False) -> list[dict[str, Any]]:
     rows = []
     for career in careers:
-        note = career.get("assignment_note")
-        if note == "assigned_based_on_second_highest_interest":
-            note_text = "Assigned based on second highest interest"
-        elif note == "assigned_based_on_third_highest_interest":
-            note_text = "Assigned based on third highest interest"
-        else:
-            note_text = ""
-
         row = {
             "Career": career["career_title"],
-            "Job Zone": career["job_zone"],
-            "Note": note_text,
         }
         if nearby:
-            row["Nearby Alternative For"] = career.get("nearby_alternative_for_job_zone")
+            row["Nearby Alternative"] = _job_zone_title(career.get("job_zone"))
         rows.append(row)
     return rows
 
@@ -157,14 +182,6 @@ def _get_current_profile_result() -> tuple[dict[str, Any] | None, str]:
     return None, "none"
 
 
-def _render_profile_source_debug(source: str, result: dict[str, Any]) -> None:
-    st.caption(
-        "Profile source used: "
-        f"{source}; profile_id={result.get('profile_id', '(missing)')}; "
-        f"timestamp={result.get('timestamp', '(missing)')}"
-    )
-
-
 def _has_followup_answer(result: dict[str, Any]) -> bool:
     followup = result.get("followup_refinement") or {}
     return bool(followup.get("questions_asked"))
@@ -200,7 +217,6 @@ def _validate_report_matches_profile(report: dict[str, Any], profile_result: dic
 def _render_initial_form(questions: list[dict[str, Any]], career_listings: list[dict[str, Any]]) -> None:
     grouped_questions = _group_questions_by_interest(questions)
 
-    st.header("Intro")
     st.write(
         "Check the box by the activities you would like to do. Do not think about "
         "how much education/training is needed or how much money you will make."
@@ -258,7 +274,7 @@ def _render_initial_form(questions: list[dict[str, Any]], career_listings: list[
     save_profile_result(result, RESULT_PATH)
     _set_profile_result(result, "session_state")
     _reset_followup_state()
-    st.success(f"Saved profile result to {Path(RESULT_PATH).as_posix()}")
+    st.success("Profile submitted.")
 
 
 def _render_profile_result(result: dict[str, Any], career_listings: list[dict[str, Any]]) -> None:
@@ -288,28 +304,28 @@ def _render_profile_result(result: dict[str, Any], career_listings: list[dict[st
     zone_columns[1].metric("Future Job Zone", _format_job_zone(future_job_zone))
 
     _show_career_matches(
-        f"Primary Interest + Current Job Zone: {top_interests[0]} / Job Zone {current_job_zone}",
+        _match_table_title(top_interests[0], 0, current_job_zone),
         career_matches["primary_current_zone"],
         career_listings,
         top_interests[0],
         current_job_zone,
     )
     _show_career_matches(
-        f"Primary Interest + Future Job Zone: {top_interests[0]} / Job Zone {future_job_zone}",
+        _match_table_title(top_interests[0], 0, future_job_zone),
         career_matches["primary_future_zone"],
         career_listings,
         top_interests[0],
         future_job_zone,
     )
     _show_career_matches(
-        f"Secondary Interest + Future Job Zone: {top_interests[1]} / Job Zone {future_job_zone}",
+        _match_table_title(top_interests[1], 1, future_job_zone),
         career_matches["secondary_future_zone"],
         career_listings,
         top_interests[1],
         future_job_zone,
     )
     _show_career_matches(
-        f"Tertiary Interest + Future Job Zone: {top_interests[2]} / Job Zone {future_job_zone}",
+        _match_table_title(top_interests[2], 2, future_job_zone),
         career_matches["tertiary_future_zone"],
         career_listings,
         top_interests[2],
@@ -317,6 +333,7 @@ def _render_profile_result(result: dict[str, Any], career_listings: list[dict[st
     )
 
     _render_followup(result)
+    _render_final_ranked_matches(st.session_state.get("profile_result", result))
     _render_final_report_section(st.session_state.get("profile_result", result))
 
     st.download_button(
@@ -332,6 +349,22 @@ def _render_followup(result: dict[str, Any]) -> None:
     followup_refinement = result.get("followup_refinement")
 
     st.header("Follow-Up Refinement")
+    if followup_refinement and followup_refinement.get("method") == "in_progress":
+        st.info("Follow-up answers are being saved as you go. Continue to finish the refinement.")
+        st.session_state["ip_followup_plan"] = (
+            st.session_state.get("ip_followup_plan")
+            or followup_refinement.get("question_plan")
+            or build_followup_question_plan(result)
+        )
+        st.session_state["ip_followup_answers"] = (
+            st.session_state.get("ip_followup_answers")
+            or followup_refinement.get("questions_asked")
+            or []
+        )
+        st.session_state["ip_followup_active"] = True
+        _render_followup_question(result)
+        return
+
     if followup_refinement:
         _show_followup_refinement(followup_refinement)
         return
@@ -365,8 +398,17 @@ def _render_followup(result: dict[str, Any]) -> None:
 
 
 def _render_followup_question(result: dict[str, Any]) -> None:
-    question_plan = st.session_state.get("ip_followup_plan") or build_followup_question_plan(result)
-    questions_asked = st.session_state.get("ip_followup_answers") or []
+    in_progress = result.get("followup_refinement") or {}
+    question_plan = (
+        st.session_state.get("ip_followup_plan")
+        or in_progress.get("question_plan")
+        or build_followup_question_plan(result)
+    )
+    questions_asked = (
+        st.session_state.get("ip_followup_answers")
+        or in_progress.get("questions_asked")
+        or []
+    )
     current = get_next_followup_question(question_plan, questions_asked)
 
     if current is None:
@@ -397,37 +439,87 @@ def _render_followup_question(result: dict[str, Any]) -> None:
     st.session_state["ip_followup_plan"] = updated_plan
     st.session_state["ip_followup_answers"] = updated_answers
     st.session_state["followup_answers"] = updated_answers
+    partial = {
+        **result,
+        "followup_refinement": {
+            "method": "in_progress",
+            "question_plan": updated_plan,
+            "questions_asked": updated_answers,
+            "final_refinement": {},
+            "json_valid": True,
+        },
+    }
+    save_profile_result(partial, RESULT_PATH)
+    _set_profile_result(partial, "session_state")
     st.rerun()
 
 
 def _show_followup_refinement(followup_refinement: dict[str, Any]) -> None:
-    final = followup_refinement.get("final_refinement") or {}
-    st.caption(f"Method: {followup_refinement.get('method', 'unknown')}")
     if not followup_refinement.get("json_valid", True):
         st.warning("The LLM response was not valid JSON after repair. A conservative fallback was saved.")
 
-    st.subheader("Refined Top Interests")
-    st.write(", ".join(final.get("refined_top_interests", [])))
-    st.metric("Refined Holland Code", final.get("refined_holland_code", ""))
-
-    st.subheader("Key Sub-Preferences")
-    for item in final.get("key_sub_preferences", []):
-        st.write(f"- {item}")
-
-    st.subheader("Future Vision Summary")
-    st.write(final.get("future_vision_summary", ""))
-
-    st.subheader("Recommended Career Matching Strategy")
-    guidance = final.get("career_matching_guidance") or {}
-    st.write(guidance.get("notes", ""))
-    if guidance.get("prioritize_interests"):
-        st.write("Prioritize: " + ", ".join(guidance["prioritize_interests"]))
-    if guidance.get("job_zone_to_use"):
-        st.write(f"Job Zone to use: {_format_job_zone(int(guidance['job_zone_to_use']))}")
-
-    with st.expander("Structured profile prepared for later RAG integration"):
+    st.success("Follow-up answers saved and the recommendations were updated.")
+    with st.expander("Profile JSON for presentation", expanded=False):
         profile_for_rag = prepare_profile_for_rag(st.session_state["profile_result"])
         st.json(profile_for_rag)
+
+
+def _render_final_ranked_matches(result: dict[str, Any]) -> None:
+    ranked = result.get("final_ranked_matches") or []
+    if not ranked:
+        return
+    st.header("Final Ranked Career Recommendations")
+    warnings = result.get("validation_warnings") or []
+    for warning in warnings:
+        st.warning(warning)
+
+    rows = []
+    has_followup = bool((result.get("followup_refinement") or {}).get("questions_asked"))
+    for item in ranked[:10]:
+        rows.append(
+            {
+                "Career": f"{item.get('career_title')} ({_job_zone_title(item.get('job_zone'))})",
+                "Fit score": item.get("score"),
+                "Original profile match": _short_original_match(item),
+                "Follow-up effect": _short_followup_effect(item, has_followup),
+            }
+        )
+    st.dataframe(rows, hide_index=True, use_container_width=True)
+    source_notes = ["[1] O*NET Interest Profiler career listings and selected Job Zones."]
+    if has_followup:
+        source_notes.append("[2] Your follow-up answers and derived preference signals.")
+    st.caption("Sources: " + " ".join(source_notes))
+
+
+def _short_original_match(item: dict[str, Any]) -> str:
+    interest = item.get("interest") or "interest"
+    group = str(item.get("source_match_group") or "").replace("_", " ")
+    group_text = f"; {group}" if group else ""
+    return f"{interest} match at {_job_zone_title(item.get('job_zone'))}{group_text} [1]"
+
+
+def _short_followup_effect(item: dict[str, Any], has_followup: bool) -> str:
+    if not has_followup:
+        return "Follow-up was skipped, so the original Interest Profiler order is used [1]"
+
+    effects = (item.get("ranking_explanation") or {}).get("followup_effects") or []
+    readable: list[str] = []
+    for effect in effects:
+        effect_text = str(effect)
+        if "tasks or work activities" in effect_text:
+            readable.append("your answers resemble the job's tasks")
+        elif "skills or knowledge" in effect_text:
+            readable.append("your answers match its skills or knowledge areas")
+        elif "Work-context" in effect_text or "work-context" in effect_text:
+            readable.append("the work setting fits your constraints")
+        elif "farther" in effect_text and "Job Zone" in effect_text:
+            readable.append("the preparation level is a weaker fit")
+        elif "Few O*NET" in effect_text:
+            readable.append("limited overlap with your follow-up wording")
+
+    if not readable:
+        return "Follow-up kept it relevant without adding a strong new signal [2]"
+    return "; ".join(readable[:2]) + " [2]"
 
 
 def _load_saved_final_report() -> dict[str, Any] | None:
@@ -448,6 +540,10 @@ def _render_final_report_section(result: dict[str, Any]) -> None:
         "local O*NET data, and available AI-impact evidence."
     )
 
+    if (result.get("followup_refinement") or {}).get("method") == "in_progress":
+        st.info("Finish the follow-up questions to compute the refined ranking before generating the final report.")
+        return
+
     if st.button("Generate Final Career Report"):
         with st.spinner("Retrieving O*NET and AI-impact evidence..."):
             try:
@@ -461,7 +557,7 @@ def _render_final_report_section(result: dict[str, Any]) -> None:
                 return
         st.session_state["final_report"] = report
         st.session_state["ip_final_career_report"] = report
-        st.success(f"Saved final report to {Path(FINAL_REPORT_PATH).as_posix()}")
+        st.success("Final career report generated.")
 
     report = st.session_state.get("final_report") or st.session_state.get("ip_final_career_report")
     if not report and not result:
@@ -483,9 +579,8 @@ def main() -> None:
     career_listings = _load_career_listings()
 
     _render_initial_form(questions, career_listings)
-    result, source = _get_current_profile_result()
+    result, _source = _get_current_profile_result()
     if result:
-        _render_profile_source_debug(source, result)
         _render_profile_result(result, career_listings)
 
 

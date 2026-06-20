@@ -17,7 +17,7 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -31,8 +31,8 @@ from career_rag.config import (
 
 # Configuration
 MODEL_NAME = EMBEDDING_MODEL_NAME
-DOCUMENTS_JSONL = Path("data/documents/onet_occupation_section_documents.jsonl")
-CHROMA_DB_PATH = Path("data/chroma_onet")
+DOCUMENTS_JSONL = PROJECT_ROOT / "data" / "documents" / "onet_occupation_section_documents.jsonl"
+CHROMA_DB_PATH = PROJECT_ROOT / "data" / "chroma_onet"
 COLLECTION_NAME = "onet_sections"
 DEFAULT_BATCH_SIZE = 50
 REBUILD_COLLECTION = os.getenv("REBUILD_COLLECTION", "false").lower() == "true"

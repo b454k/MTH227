@@ -17,7 +17,7 @@ from typing import Any
 import duckdb
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
 SQL_FOLDER = PROJECT_ROOT / "onet_sql"
 REPORT_PATH = PROJECT_ROOT / "data" / "duckdb" / "missing_tables_import_report.txt"

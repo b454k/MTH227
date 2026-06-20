@@ -7,8 +7,9 @@ filename order and writes the resulting tables to ``data/duckdb/onet.duckdb``.
 from pathlib import Path
 import duckdb
 
-DB_PATH = Path("data/duckdb/onet.duckdb")
-SQL_FOLDER = Path("onet_sql")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
+SQL_FOLDER = PROJECT_ROOT / "onet_sql"
 
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 

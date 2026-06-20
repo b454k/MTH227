@@ -12,8 +12,9 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
 # Database connection
-DB_PATH = Path(__file__).parent.parent / "data" / "duckdb" / "onet.duckdb"
-OUTPUT_DIR = Path(__file__).parent.parent / "data" / "documents"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "documents"
 
 # Ensure output directory exists
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Embed supplemental O*NET documents into a separate ChromaDB collection."""
+"""Embed full O*NET occupation documents into a separate ChromaDB collection.
+
+This script reads full occupation documents from JSONL, embeds them with the
+same model used for section documents, and stores them in the existing ChromaDB
+path under a new collection named ``onet_full_occupations``.
+
+It does not modify or delete the existing ``onet_sections`` collection.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +20,7 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -26,9 +33,9 @@ from career_rag.config import (
 
 
 MODEL_NAME = EMBEDDING_MODEL_NAME
-DOCUMENTS_JSONL = Path("data/documents/onet_supplemental_documents.jsonl")
-CHROMA_DB_PATH = Path("data/chroma_onet")
-COLLECTION_NAME = "onet_supplemental"
+DOCUMENTS_JSONL = PROJECT_ROOT / "data" / "documents" / "onet_occupation_documents.jsonl"
+CHROMA_DB_PATH = PROJECT_ROOT / "data" / "chroma_onet"
+COLLECTION_NAME = "onet_full_occupations"
 DEFAULT_BATCH_SIZE = 50
 
 COLLECTION_METADATA = {
@@ -38,21 +45,8 @@ COLLECTION_METADATA = {
 }
 
 
-def clean_metadata(metadata: dict[str, Any]) -> dict[str, str | int | float | bool]:
-    """Normalize metadata to Chroma-supported scalar values."""
-    cleaned: dict[str, str | int | float | bool] = {}
-    for key, value in (metadata or {}).items():
-        if isinstance(value, (str, int, float, bool)):
-            cleaned[key] = value
-        elif value is None:
-            cleaned[key] = ""
-        else:
-            cleaned[key] = str(value)
-    return cleaned
-
-
 def load_documents() -> tuple[list[str], list[str], list[dict[str, Any]]]:
-    """Load supplemental document IDs, texts, and metadata from JSONL."""
+    """Load document IDs, texts, and metadata from the JSONL input file."""
     if not DOCUMENTS_JSONL.exists():
         raise FileNotFoundError(f"Document file not found: {DOCUMENTS_JSONL}")
 
@@ -72,30 +66,29 @@ def load_documents() -> tuple[list[str], list[str], list[dict[str, Any]]]:
             except json.JSONDecodeError as exc:
                 raise ValueError(f"Invalid JSON on line {line_number}") from exc
 
-            doc_id = str(document.get("id") or "").strip()
-            text = str(document.get("text") or "").strip()
-            if not doc_id or not text:
-                raise ValueError(f"Missing id or text on line {line_number}")
+            try:
+                doc_id = document["id"]
+                text = document["text"]
+            except KeyError as exc:
+                raise KeyError(
+                    f"Missing required key {exc!s} on line {line_number}"
+                ) from exc
 
-            ids.append(doc_id)
-            texts.append(text)
-            metadatas.append(clean_metadata(document.get("metadata", {}) or {}))
+            ids.append(str(doc_id))
+            texts.append(str(text))
+            metadatas.append(document.get("metadata", {}) or {})
 
-    print(f"Loaded {len(ids):,} supplemental documents")
+    print(f"Loaded {len(ids):,} documents")
     return ids, texts, metadatas
 
 
 def load_model() -> SentenceTransformer:
-    """Load the embedding model used by the existing O*NET collections."""
+    """Load the sentence-transformer model used during indexing."""
     print(f"\nLoading embedding model: {MODEL_NAME}")
     require_hf_token()
     with quiet_huggingface_model_load():
         model = SentenceTransformer(MODEL_NAME)
-    if hasattr(model, "get_embedding_dimension"):
-        embedding_dimension = model.get_embedding_dimension()
-    else:
-        embedding_dimension = model.get_sentence_embedding_dimension()
-    print(f"Model loaded. Embedding dimension: {embedding_dimension}")
+    print(f"Model loaded. Embedding dimension: {model.get_sentence_embedding_dimension()}")
     return model
 
 
@@ -104,38 +97,33 @@ def create_embeddings(
     model: SentenceTransformer,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> list[list[float]]:
-    """Create embeddings for all supplemental documents."""
-    print(f"\nEmbedding {len(texts):,} supplemental documents...")
+    """Create embeddings for all document texts."""
+    print(f"\nEmbedding {len(texts):,} documents...")
     embeddings = model.encode(
         texts,
         batch_size=batch_size,
         show_progress_bar=True,
         convert_to_numpy=True,
     )
+
     if hasattr(embeddings, "tolist"):
         return embeddings.tolist()
     return embeddings
 
 
-def get_or_create_collection() -> chromadb.Collection:
-    """Connect to ChromaDB and get or create the supplemental collection."""
-    CHROMA_DB_PATH.mkdir(parents=True, exist_ok=True)
-    client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
+def get_or_create_collection(
+    chroma_path: Path = CHROMA_DB_PATH,
+    collection_name: str = COLLECTION_NAME,
+) -> chromadb.Collection:
+    """Connect to ChromaDB and get or create the full occupation collection."""
+    chroma_path.mkdir(parents=True, exist_ok=True)
+    client = chromadb.PersistentClient(path=str(chroma_path))
     collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
+        name=collection_name,
         metadata=COLLECTION_METADATA,
     )
     print(f"\nUsing collection: {collection.name}")
     return collection
-
-
-def get_existing_ids(collection: chromadb.Collection) -> set[str]:
-    """Fetch existing document IDs from the supplemental collection."""
-    try:
-        existing = collection.get()
-    except Exception:
-        return set()
-    return set(existing.get("ids", []) or [])
 
 
 def insert_batches(
@@ -146,8 +134,12 @@ def insert_batches(
     metadatas: list[dict[str, Any]],
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> int:
-    """Insert only new supplemental documents into ChromaDB."""
-    existing_ids = get_existing_ids(collection)
+    """Insert embedded documents into ChromaDB in batches."""
+    print(f"\nInserting documents into '{collection.name}'...")
+    print(f"Batch size: {batch_size}")
+
+    existing_docs = collection.get()
+    existing_ids = set(existing_docs.get("ids", []))
     if existing_ids:
         print(f"Collection already contains {len(existing_ids):,} documents")
 
@@ -155,13 +147,16 @@ def insert_batches(
     skipped_count = 0
     total_batches = (len(ids) + batch_size - 1) // batch_size
 
-    print(f"\nInserting new documents into '{collection.name}'...")
-    with tqdm(total=len(ids), desc="Inserting supplemental docs") as progress_bar:
+    with tqdm(total=len(ids), desc="Inserting documents") as progress_bar:
         for batch_index in range(total_batches):
             start = batch_index * batch_size
             end = min(start + batch_size, len(ids))
 
             batch_ids = ids[start:end]
+            batch_texts = texts[start:end]
+            batch_embeddings = embeddings[start:end]
+            batch_metadatas = metadatas[start:end]
+
             new_indices = [
                 index
                 for index, doc_id in enumerate(batch_ids)
@@ -171,10 +166,11 @@ def insert_batches(
             if new_indices:
                 collection.add(
                     ids=[batch_ids[index] for index in new_indices],
-                    documents=[texts[start + index] for index in new_indices],
-                    embeddings=[embeddings[start + index] for index in new_indices],
-                    metadatas=[metadatas[start + index] for index in new_indices],
+                    documents=[batch_texts[index] for index in new_indices],
+                    embeddings=[batch_embeddings[index] for index in new_indices],
+                    metadatas=[batch_metadatas[index] for index in new_indices],
                 )
+
                 for index in new_indices:
                     existing_ids.add(batch_ids[index])
                 inserted_count += len(new_indices)
@@ -183,36 +179,15 @@ def insert_batches(
             progress_bar.update(len(batch_ids))
 
     if skipped_count:
-        print(f"Skipped {skipped_count:,} duplicate IDs already in collection")
+        print(f"Skipped {skipped_count:,} documents already present in collection")
 
     return inserted_count
 
 
-def print_validation(
-    collection: chromadb.Collection,
-    total_docs: int,
-    inserted_count: int,
-    elapsed_time: float,
-) -> None:
-    """Print the requested validation summary."""
-    print("\n" + "=" * 80)
-    print("SUPPLEMENTAL COLLECTION VALIDATION")
-    print("=" * 80)
-    print(f"Total supplemental docs loaded: {total_docs:,}")
-    print(f"Total embedded:                 {inserted_count:,}")
-    print(f"Collection count:               {collection.count():,}")
-    print(f"Elapsed time:                   {elapsed_time:.2f} seconds")
-
-    sample = collection.get(limit=1, include=["metadatas", "documents"])
-    if sample.get("ids"):
-        print(f"Example document id:            {sample['ids'][0]}")
-        print(f"Example metadata:               {sample['metadatas'][0]}")
-
-
 def main() -> None:
-    """Embed supplemental O*NET documents into ChromaDB."""
+    """Embed full occupation documents and store them in ChromaDB."""
     print("=" * 80)
-    print("O*NET SUPPLEMENTAL DOCUMENT EMBEDDING")
+    print("O*NET FULL OCCUPATION DOCUMENT EMBEDDING")
     print("=" * 80)
     print(f"Input file:       {DOCUMENTS_JSONL}")
     print(f"ChromaDB path:    {CHROMA_DB_PATH}")
@@ -224,8 +199,9 @@ def main() -> None:
     try:
         ids, texts, metadatas = load_documents()
         model = load_model()
-        embeddings = create_embeddings(texts, model)
+        embeddings = create_embeddings(texts, model, batch_size=DEFAULT_BATCH_SIZE)
         collection = get_or_create_collection()
+
         inserted_count = insert_batches(
             collection=collection,
             ids=ids,
@@ -234,12 +210,18 @@ def main() -> None:
             metadatas=metadatas,
             batch_size=DEFAULT_BATCH_SIZE,
         )
-        print_validation(
-            collection=collection,
-            total_docs=len(ids),
-            inserted_count=inserted_count,
-            elapsed_time=time.time() - start_time,
-        )
+
+        elapsed_time = time.time() - start_time
+
+        print("\n" + "=" * 80)
+        print("EMBEDDING COMPLETE")
+        print("=" * 80)
+        print(f"Total input documents:   {len(ids):,}")
+        print(f"Documents embedded:      {inserted_count:,}")
+        print(f"Collection count:        {collection.count():,}")
+        print(f"Elapsed time:            {elapsed_time:.2f} seconds")
+        print("=" * 80)
+
     except Exception as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)

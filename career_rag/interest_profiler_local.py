@@ -34,6 +34,12 @@ CAREER_MATCH_KEYS = [
     "secondary_future_zone",
     "tertiary_future_zone",
 ]
+RANKED_MATCH_KEYS = [
+    "primary_future_zone",
+    "primary_current_zone",
+    "secondary_future_zone",
+    "tertiary_future_zone",
+]
 
 
 def canonical_interest(value: str) -> str:
@@ -225,6 +231,8 @@ def build_profile_result(
     holland_code = make_holland_code(top_interests)
     timestamp = datetime.now(timezone.utc).isoformat()
     profile_id = uuid4().hex
+    normalized_matches = _normalize_career_matches(career_matches)
+    initial_ranked_matches = _flatten_career_match_records(normalized_matches)
 
     return {
         "source": PROFILE_SOURCE,
@@ -240,13 +248,26 @@ def build_profile_result(
         "initial_holland_code": holland_code,
         "current_job_zone": _validate_job_zone(current_job_zone),
         "future_job_zone": _validate_job_zone(future_job_zone),
-        "career_matches": _normalize_career_matches(career_matches),
+        "career_matches": normalized_matches,
         "followup_refinement": None,
         "refined_interests": top_interests,
         "final_code": holland_code,
         "preferences_used": [],
         "final_top_interests": top_interests,
         "final_holland_code": holland_code,
+        "refined_career_matches": initial_ranked_matches,
+        "final_ranked_matches": initial_ranked_matches,
+        "refinement_debug": {
+            "initial_code": holland_code,
+            "final_code": holland_code,
+            "followup_refinement": None,
+            "preferences_used": [],
+            "top_10_initial_matches": _debug_match_rows(initial_ranked_matches[:10]),
+            "top_10_refined_matches": _debug_match_rows(initial_ranked_matches[:10]),
+            "score_components": [],
+            "validation_warnings": [],
+        },
+        "validation_warnings": [],
         "ready_for_rag": True,
     }
 
@@ -255,19 +276,53 @@ def update_profile_with_followup(
     profile_result: dict[str, Any],
     followup_refinement: dict[str, Any],
 ) -> dict[str, Any]:
-    """Attach follow-up refinement without overwriting raw O*NET scores."""
+    """Attach follow-up refinement and rebuild final career ranking."""
     updated = dict(profile_result)
     updated["followup_refinement"] = followup_refinement
 
     final_refinement = followup_refinement.get("final_refinement") or {}
-    refined_top = final_refinement.get("refined_top_interests") or updated.get("initial_top_interests")
-    refined_holland = final_refinement.get("refined_holland_code") or make_holland_code(refined_top)
+    questions_asked = list(followup_refinement.get("questions_asked") or [])
+    initial_top = [canonical_interest(interest) for interest in updated.get("initial_top_interests", [])]
+    proposed_top = final_refinement.get("refined_top_interests") or initial_top
+    if questions_asked and _refined_interests_justified(updated, final_refinement, proposed_top):
+        refined_top = [canonical_interest(interest) for interest in proposed_top][:3]
+    else:
+        refined_top = initial_top
+    refined_holland = make_holland_code(refined_top)
 
-    updated["final_top_interests"] = [canonical_interest(interest) for interest in refined_top]
-    updated["final_holland_code"] = str(refined_holland)
+    updated["final_top_interests"] = refined_top
+    updated["final_holland_code"] = refined_holland
     updated["refined_interests"] = updated["final_top_interests"]
     updated["final_code"] = updated["final_holland_code"]
-    updated["preferences_used"] = list(final_refinement.get("key_sub_preferences") or [])
+
+    try:
+        from career_rag.ip_refinement_ranker import build_refined_career_recommendations
+
+        ranking_update = build_refined_career_recommendations(updated, followup_refinement)
+    except Exception as exc:
+        initial_ranked_matches = _flatten_career_match_records(updated.get("career_matches") or {})
+        ranking_update = {
+            "preferences_used": list(final_refinement.get("key_sub_preferences") or []),
+            "refined_career_matches": initial_ranked_matches,
+            "final_ranked_matches": initial_ranked_matches,
+            "refinement_debug": {
+                "initial_code": updated.get("initial_code") or updated.get("initial_holland_code"),
+                "final_code": updated.get("final_code") or updated.get("final_holland_code"),
+                "followup_refinement": followup_refinement,
+                "preferences_used": list(final_refinement.get("key_sub_preferences") or []),
+                "top_10_initial_matches": _debug_match_rows(initial_ranked_matches[:10]),
+                "top_10_refined_matches": _debug_match_rows(initial_ranked_matches[:10]),
+                "score_components": [],
+                "validation_warnings": [f"Refined ranking failed: {exc}"],
+            },
+            "validation_warnings": [f"Refined ranking failed: {exc}"],
+        }
+
+    updated["preferences_used"] = ranking_update.get("preferences_used", [])
+    updated["refined_career_matches"] = ranking_update.get("refined_career_matches", [])
+    updated["final_ranked_matches"] = ranking_update.get("final_ranked_matches", [])
+    updated["refinement_debug"] = ranking_update.get("refinement_debug", {})
+    updated["validation_warnings"] = ranking_update.get("validation_warnings", [])
     updated["ready_for_rag"] = True
     return updated
 
@@ -285,13 +340,56 @@ def save_profile_result(result: dict[str, Any], path: str | Path) -> Path:
 def _flatten_career_titles(career_matches: dict[str, Any]) -> list[str]:
     titles: list[str] = []
     seen: set[str] = set()
-    for key in CAREER_MATCH_KEYS:
+    for key in RANKED_MATCH_KEYS:
         for career in career_matches.get(key, []) or []:
             title = str(career.get("career_title") or "").strip()
             if title and title.lower() not in seen:
                 seen.add(title.lower())
                 titles.append(title)
     return titles
+
+
+def _flatten_career_match_records(career_matches: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for key in RANKED_MATCH_KEYS:
+        for group_rank, career in enumerate(career_matches.get(key, []) or [], start=1):
+            title = str(career.get("career_title") or "").strip()
+            if not title:
+                continue
+            title_key = title.lower()
+            if title_key in seen:
+                continue
+            seen.add(title_key)
+            records.append(
+                {
+                    **career,
+                    "career_title": title,
+                    "source_match_group": key,
+                    "original_rank": len(records) + 1,
+                    "original_group_rank": group_rank,
+                    "ranking_explanation": {
+                        "original_profile": (
+                            f"Originally appeared in the O*NET Interest Profiler candidate pool "
+                            f"for {career.get('interest')} / Job Zone {career.get('job_zone')}."
+                        ),
+                        "followup_effects": [],
+                    },
+                }
+            )
+    return records
+
+
+def _debug_match_rows(matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "career_title": item.get("career_title"),
+            "interest": item.get("interest"),
+            "job_zone": item.get("job_zone"),
+            "score": item.get("score"),
+        }
+        for item in matches
+    ]
 
 
 def prepare_profile_for_rag(profile_result: dict[str, Any]) -> dict[str, Any]:
@@ -326,7 +424,13 @@ def prepare_profile_for_rag(profile_result: dict[str, Any]) -> dict[str, Any]:
     holland_code = str(holland_code or make_holland_code(top_interests))
     current_job_zone = _validate_job_zone(profile_result.get("current_job_zone"))
     future_job_zone = _validate_job_zone(profile_result.get("future_job_zone"))
-    career_titles = _flatten_career_titles(profile_result.get("career_matches") or {})
+    career_titles = [
+        str(item.get("career_title") or "").strip()
+        for item in profile_result.get("final_ranked_matches") or []
+        if str(item.get("career_title") or "").strip()
+    ]
+    if not career_titles:
+        career_titles = _flatten_career_titles(profile_result.get("career_matches") or {})
 
     final_refinement = (followup_refinement or {}).get("final_refinement") or {}
     guidance = final_refinement.get("career_matching_guidance") or {}
@@ -353,3 +457,38 @@ def prepare_profile_for_rag(profile_result: dict[str, Any]) -> dict[str, Any]:
         "career_titles_to_retrieve": career_titles,
         "profile_summary_for_prompt": " ".join(summary_parts),
     }
+
+
+def _refined_interests_justified(
+    profile_result: dict[str, Any],
+    final_refinement: dict[str, Any],
+    proposed_top: Any,
+) -> bool:
+    try:
+        proposed = [canonical_interest(interest) for interest in list(proposed_top)[:3]]
+    except (TypeError, ValueError):
+        return False
+    initial_top = [canonical_interest(interest) for interest in profile_result.get("initial_top_interests", [])]
+    if proposed == initial_top:
+        return True
+
+    ambiguity = profile_result.get("score_ambiguity") or {}
+    ambiguous = [canonical_interest(interest) for interest in ambiguity.get("ambiguous_categories", [])]
+    guidance = final_refinement.get("career_matching_guidance") or {}
+    prioritized = []
+    for interest in guidance.get("prioritize_interests") or []:
+        try:
+            prioritized.append(canonical_interest(interest))
+        except ValueError:
+            continue
+    tie_resolution = final_refinement.get("tie_resolution") or {}
+    resolved_order = []
+    for interest in tie_resolution.get("resolved_order") or []:
+        try:
+            resolved_order.append(canonical_interest(interest))
+        except ValueError:
+            continue
+
+    if ambiguity.get("has_ambiguity") and set(proposed).issubset(set(initial_top) | set(ambiguous)):
+        return bool(resolved_order or prioritized)
+    return bool(prioritized and proposed[: len(prioritized)] == prioritized[: len(proposed)])

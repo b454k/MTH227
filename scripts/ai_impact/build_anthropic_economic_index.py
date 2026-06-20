@@ -15,34 +15,22 @@ from urllib.parse import quote
 import pandas as pd
 import requests
 
-try:
-    from career_rag.ai_exposure_utils import (
-        PROJECT_ROOT,
-        clean_text,
-        compact_dict_text,
-        created_at,
-        normalize_soc_code,
-        normalize_text,
-        one_line,
-        parse_float,
-        resolve_project_path,
-        stable_doc_id,
-        write_jsonl,
-    )
-except ImportError:  # Allows: py career_rag/build_anthropic_economic_index.py
-    from ai_exposure_utils import (  # type: ignore
-        PROJECT_ROOT,
-        clean_text,
-        compact_dict_text,
-        created_at,
-        normalize_soc_code,
-        normalize_text,
-        one_line,
-        parse_float,
-        resolve_project_path,
-        stable_doc_id,
-        write_jsonl,
-    )
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from career_rag.ai_exposure_utils import (
+    clean_text,
+    compact_dict_text,
+    created_at,
+    normalize_soc_code,
+    normalize_text,
+    one_line,
+    parse_float,
+    resolve_project_path,
+    stable_doc_id,
+    write_jsonl,
+)
 
 
 DEFAULT_INPUT_DIR = PROJECT_ROOT / "data" / "anthropic_economic_index"

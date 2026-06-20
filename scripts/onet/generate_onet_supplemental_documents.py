@@ -12,7 +12,7 @@ from typing import Any, Iterable
 import duckdb
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
 OUTPUT_PATH = (
     PROJECT_ROOT / "data" / "documents" / "onet_supplemental_documents.jsonl"

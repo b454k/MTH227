@@ -16,7 +16,8 @@ import requests
 from bs4 import BeautifulSoup
 
 
-BASE_DIR = Path("data/research")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BASE_DIR = PROJECT_ROOT / "data" / "research"
 PDF_DIR = BASE_DIR / "pdfs"
 WEB_DIR = BASE_DIR / "web_snapshots"
 

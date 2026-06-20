@@ -5,33 +5,25 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
 from bs4 import BeautifulSoup
 
-try:
-    from career_rag.ai_exposure_utils import (
-        PROJECT_ROOT,
-        clean_text,
-        created_at,
-        one_line,
-        read_jsonl,
-        resolve_project_path,
-        stable_doc_id,
-        write_jsonl,
-    )
-except ImportError:  # Allows: py career_rag/extract_research_chunks.py
-    from ai_exposure_utils import (  # type: ignore
-        PROJECT_ROOT,
-        clean_text,
-        created_at,
-        one_line,
-        read_jsonl,
-        resolve_project_path,
-        stable_doc_id,
-        write_jsonl,
-    )
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from career_rag.ai_exposure_utils import (
+    clean_text,
+    created_at,
+    one_line,
+    read_jsonl,
+    resolve_project_path,
+    stable_doc_id,
+    write_jsonl,
+)
 
 
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "research_sources" / "source_manifest.jsonl"
@@ -348,4 +340,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

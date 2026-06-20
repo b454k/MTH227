@@ -11,7 +11,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ARCHIVE_DIR = PROJECT_ROOT / "data_archives"
 MANIFEST_PATH = ARCHIVE_DIR / "manifest.json"
 

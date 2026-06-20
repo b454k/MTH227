@@ -19,7 +19,7 @@ from typing import Any
 import duckdb
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
 FULL_DOCS_PATH = PROJECT_ROOT / "data" / "documents" / "onet_occupation_documents.jsonl"
 SECTION_DOCS_PATH = (

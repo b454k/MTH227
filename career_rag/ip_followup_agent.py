@@ -1,15 +1,15 @@
-"""Follow-up conversation helpers for the local O*NET Interest Profiler."""
+"""Open-ended follow-up filtering for the local O*NET Interest Profiler."""
 
 from __future__ import annotations
 
 import json
 import os
-from itertools import combinations
-from pathlib import Path
+import re
 from typing import Any
 
 from career_rag.config import ENV_PATH
 from career_rag.interest_profiler_local import (
+    RIASEC_BY_CODE,
     RIASEC_CODES,
     RIASEC_INTERESTS,
     canonical_interest,
@@ -18,272 +18,206 @@ from career_rag.interest_profiler_local import (
 
 
 MAX_FOLLOWUP_QUESTIONS = 10
-TIE_BREAKING_STAGE = "tie_breaking"
-DYNAMIC_DEEPENING_STAGE = "dynamic_deepening"
-FUTURE_VISION_STAGE = "future_vision"
-
-SYSTEM_PROMPT_TEMPLATE = """You are a career exploration assistant. Your role is to help users discover their career interests through natural conversation.
-
-CONTEXT:
-The user has already completed the O*NET Interest Profiler Short Form locally.
-You have:
-
-* their raw RIASEC scores
-* their initial top 3 interests
-* their current Job Zone
-* their future Job Zone
-* any ambiguous or tied categories
-
-Your job is to:
-
-1. Resolve tied or unclear categories with follow-up questions.
-2. Deepen the profile with dynamic follow-up questions.
-3. Explore future vision.
-4. Produce a structured final refinement JSON.
-
-GENERAL RULES:
-
-* Ask one question at a time.
-* Use a warm, non-judgmental tone.
-* Never ask "what career do you want?"
-* Never ask the user to self-categorize into RIASEC.
-* Use activity-based questions.
-* If the user gives a very short answer, ask one gentle clarification.
-* Maximum total follow-up questions across all stages: 10.
-* If the user seems disengaged, shorten the remaining questions.
-* Do not overwrite the raw O*NET scores.
-* Your output should refine interpretation, not change the official score.
-
-STAGE 1: TIE-BREAKING
-
-Run this only if:
-
-* two or more top RIASEC categories are exactly tied, or
-* two or more top RIASEC categories are within 1 point.
-
-Rules:
-
-* Ask one question at a time.
-* Use activity-based questions.
-* Do not ask "Do you prefer Realistic or Investigative?"
-* Infer the answer from the user's response.
-* After each answer, update the internal estimate of which category is stronger.
-* Stop when the tie is resolved or after maximum 3 tie-breaking questions.
-
-Tie-breaking question bank:
-
-R vs I:
-"When something breaks at home, what is your first instinct - try to fix it hands-on, or research and understand what is wrong first?"
-
-R vs A:
-"If you had a free weekend project, would building something physical or creating something artistic feel more natural to you?"
-
-R vs S:
-"Would you rather spend a day working with tools, machines, or equipment, or spend it helping and talking with people?"
-
-R vs E:
-"Do you usually prefer doing the practical work yourself, or organizing and directing others to get it done?"
-
-R vs C:
-"Would you rather physically build or repair something, or follow a precise technical process step by step?"
-
-I vs A:
-"When you get curious about something, do you usually research and analyze it deeply, or imagine and create something inspired by it?"
-
-I vs S:
-"Do you find it more satisfying to solve a complex problem, or help someone work through a difficult situation?"
-
-I vs E:
-"Would you rather analyze data and evidence, or persuade people and lead a project?"
-
-I vs C:
-"Do you prefer open-ended research where the answer is uncertain, or structured tasks with a clear correct process?"
-
-A vs S:
-"If you were volunteering, would you rather run a creative workshop, or provide one-on-one support to someone?"
-
-A vs E:
-"Do you get more energy from expressing your own creative ideas, or from pitching and selling ideas to others?"
-
-A vs C:
-"Would you rather design something original with freedom, or organize and manage detailed records and processes?"
-
-S vs E:
-"Do you prefer supporting people personally, or leading a team toward a shared goal?"
-
-S vs C:
-"Would you rather spend your day counseling and supporting people, or maintaining organized systems and records?"
-
-E vs C:
-"Do you prefer making decisions and taking risks to grow something, or maintaining accuracy and order in established systems?"
-
-STAGE 2: DYNAMIC DEEPENING
-
-Purpose:
-After tie-breaking, ask 3-4 follow-up questions to understand the user's sub-preferences within their top RIASEC categories.
-
-Research inspiration:
-Renji et al. (2025), "Steve: LLM Powered ChatBot for Career Progression"
-https://arxiv.org/abs/2504.03789
-
-Use this as design inspiration for structured AI-led career interviews, not as a claim that these exact questions are validated.
-
-Rules:
-
-* Ask one question at a time.
-* Ask 3-4 questions total in this stage.
-* Generate questions dynamically based on the user's top 3 RIASEC categories and previous answers.
-* Never repeat something already answered.
-* Each question should reveal what type of career path within the top categories might fit.
-* Keep answers short and conversational.
-
-Question templates by category:
-
-If Social is high:
-
-1. "In a group setting, do you prefer teaching and guiding others, or listening and supporting them through problems?"
-2. "Do you find more meaning in working with children, adults going through difficulties, or communities at a larger scale?"
-
-If Investigative is high:
-
-1. "When you research something, are you more drawn to understanding how things work scientifically, or solving real-world practical problems?"
-2. "Do you prefer working with data and numbers, living organisms, technology systems, or abstract theories?"
-
-If Artistic is high:
-
-1. "Is your creative side more visual, written, musical/performance-based, or design-oriented?"
-2. "Do you prefer creating alone, or collaborating with others on a creative project?"
-
-If Realistic is high:
-
-1. "Do you prefer working with technology and machines, animals and nature, or construction and physical structures?"
-2. "Do you like working outdoors, in a workshop, or with technical equipment in a controlled setting?"
-
-If Enterprising is high:
-
-1. "Are you more drawn to starting your own thing, leading teams inside an organization, or persuading and selling to clients?"
-2. "Do you prefer fast-paced business environments or strategic long-term planning?"
-
-If Conventional is high:
-
-1. "Do you prefer working with financial data, administrative systems, legal/regulatory details, or technology infrastructure?"
-2. "Do you like working independently on structured tasks, or maintaining systems that other people rely on?"
-
-STAGE 3: FUTURE VISION
-
-Purpose:
-Ask future-oriented questions to understand aspirations, fears, and hidden preferences.
-
-Research inspiration:
-Jeon et al. (2025), "Letters from Future Self: Augmenting the Letter-Exchange Exercise with LLM-based Agents to Enhance Young Adults' Career Exploration"
-https://arxiv.org/abs/2502.18881
-
-Use this as design inspiration for future-self reflection and career exploration. Do not claim that these exact questions are psychometrically validated.
-
-Ask exactly these 3 questions, one at a time, in this order:
-
-Q1:
-"Imagine you wake up five years from now on a perfect workday. Where are you, what are you doing, and who are you working with?"
-
-Q2:
-"What worries you most about choosing a career path right now?"
-
-Q3:
-"Is there something you have always thought 'I'd love to do that, but it's probably not realistic' - what is it?"
-
-STAGE 4: FINAL REFINEMENT JSON
-
-After all stages are complete, produce structured JSON internally.
-
-Required JSON:
-
-{
-"tie_resolution": {
-"was_needed": true,
-"ambiguous_categories": ["Investigative", "Conventional"],
-"resolved_order": ["Investigative", "Conventional"],
-"reasoning_summary": "Short explanation based on user answers."
-},
-"refined_top_interests": ["Investigative", "Conventional", "Social"],
-"refined_holland_code": "ICS",
-"key_sub_preferences": [
-"Prefers data and real-world problem solving",
-"Likes structured tasks but not repetitive clerical work",
-"Wants some human impact in career choice"
-],
-"future_vision_summary": "2-3 sentence summary.",
-"concerns_noted": [
-"Concern about job stability",
-"Concern about choosing too narrow a path"
-],
-"career_matching_guidance": {
-"prioritize_interests": ["Investigative", "Conventional", "Social"],
-"job_zone_to_use": 5,
-"notes": "Use future job zone for aspirational recommendations, current job zone for immediate options."
-},
-"ready_for_job_matching": true
-}
-
-Important:
-The LLM should return valid JSON for the final refinement.
-Validate the JSON before saving.
-If JSON parsing fails, ask the LLM once to repair the JSON.
-If it still fails, save the raw response and mark json_valid=false.
-
-CURRENT USER CONTEXT:
-{context_block}
-"""
-
-TIE_BREAKING_QUESTIONS = {
-    ("Realistic", "Investigative"): "When something breaks at home, what is your first instinct - try to fix it hands-on, or research and understand what is wrong first?",
-    ("Realistic", "Artistic"): "If you had a free weekend project, would building something physical or creating something artistic feel more natural to you?",
-    ("Realistic", "Social"): "Would you rather spend a day working with tools, machines, or equipment, or spend it helping and talking with people?",
-    ("Realistic", "Enterprising"): "Do you usually prefer doing the practical work yourself, or organizing and directing others to get it done?",
-    ("Realistic", "Conventional"): "Would you rather physically build or repair something, or follow a precise technical process step by step?",
-    ("Investigative", "Artistic"): "When you get curious about something, do you usually research and analyze it deeply, or imagine and create something inspired by it?",
-    ("Investigative", "Social"): "Do you find it more satisfying to solve a complex problem, or help someone work through a difficult situation?",
-    ("Investigative", "Enterprising"): "Would you rather analyze data and evidence, or persuade people and lead a project?",
-    ("Investigative", "Conventional"): "Do you prefer open-ended research where the answer is uncertain, or structured tasks with a clear correct process?",
-    ("Artistic", "Social"): "If you were volunteering, would you rather run a creative workshop, or provide one-on-one support to someone?",
-    ("Artistic", "Enterprising"): "Do you get more energy from expressing your own creative ideas, or from pitching and selling ideas to others?",
-    ("Artistic", "Conventional"): "Would you rather design something original with freedom, or organize and manage detailed records and processes?",
-    ("Social", "Enterprising"): "Do you prefer supporting people personally, or leading a team toward a shared goal?",
-    ("Social", "Conventional"): "Would you rather spend your day counseling and supporting people, or maintaining organized systems and records?",
-    ("Enterprising", "Conventional"): "Do you prefer making decisions and taking risks to grow something, or maintaining accuracy and order in established systems?",
-}
-
-DYNAMIC_QUESTION_TEMPLATES = {
-    "Social": [
-        "In a group setting, do you prefer teaching and guiding others, or listening and supporting them through problems?",
-        "Do you find more meaning in working with children, adults going through difficulties, or communities at a larger scale?",
-    ],
-    "Investigative": [
-        "When you research something, are you more drawn to understanding how things work scientifically, or solving real-world practical problems?",
-        "Do you prefer working with data and numbers, living organisms, technology systems, or abstract theories?",
-    ],
-    "Artistic": [
-        "Is your creative side more visual, written, musical/performance-based, or design-oriented?",
-        "Do you prefer creating alone, or collaborating with others on a creative project?",
-    ],
-    "Realistic": [
-        "Do you prefer working with technology and machines, animals and nature, or construction and physical structures?",
-        "Do you like working outdoors, in a workshop, or with technical equipment in a controlled setting?",
-    ],
-    "Enterprising": [
-        "Are you more drawn to starting your own thing, leading teams inside an organization, or persuading and selling to clients?",
-        "Do you prefer fast-paced business environments or strategic long-term planning?",
-    ],
-    "Conventional": [
-        "Do you prefer working with financial data, administrative systems, legal/regulatory details, or technology infrastructure?",
-        "Do you like working independently on structured tasks, or maintaining systems that other people rely on?",
-    ],
-}
-
-FUTURE_VISION_QUESTIONS = [
-    "Imagine you wake up five years from now on a perfect workday. Where are you, what are you doing, and who are you working with?",
-    "What worries you most about choosing a career path right now?",
-    "Is there something you have always thought 'I'd love to do that, but it's probably not realistic' - what is it?",
+CAREER_FILTERING_STAGE = "career_filtering"
+
+CONFIDENCE_WEIGHT = {"high": 1.0, "medium": 0.6, "low": 0.3}
+
+CAREER_FILTERING_QUESTIONS = [
+    {
+        "id": "work_setting",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Context - Physical Setting",
+        "source": "O*NET Work Context (onetonline.org/find/descriptor/result/4.C.2)",
+        "question": (
+            "Describe where you'd most want to spend your working hours. "
+            "Think about the physical space, the atmosphere, indoors or outdoors - "
+            "paint the picture of your ideal work environment."
+        ),
+        "llm_instruction": (
+            "Infer whether the user prefers outdoor/field settings, physical workspaces, "
+            "office/desk environments, or remote/mobile work. Map to: Realistic "
+            "(outdoor, physical), Conventional/Investigative (office), "
+            "Artistic/Enterprising (flexible, varied)."
+        ),
+    },
+    {
+        "id": "work_with",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Activities - People / Data / Things / Ideas",
+        "source": "Holland (1997); O*NET Work Activities",
+        "question": (
+            "When you imagine yourself fully absorbed in work you love, what are you "
+            "actually doing? Not the job title - what's happening in the room, what "
+            "are you interacting with?"
+        ),
+        "llm_instruction": (
+            "Identify primary work object: people (Social/Enterprising), "
+            "data/information (Investigative/Conventional), physical things "
+            "(Realistic), ideas/creative output (Artistic/Investigative). Weight the "
+            "dominant category."
+        ),
+    },
+    {
+        "id": "independence",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Values - Independence",
+        "source": "O*NET Work Importance Locator; CareerOneStop Work Values Matcher",
+        "question": (
+            "Tell me about a time you felt most free and effective at work or school. "
+            "What made it work - were you on your own, collaborating, following a "
+            "structure, or making it up as you went?"
+        ),
+        "llm_instruction": (
+            "Assess autonomy preference: high independence "
+            "(Artistic/Investigative/Enterprising), structured with some discretion "
+            "(Social/Realistic), clear direction and process "
+            "(Conventional/Realistic). Look for language around freedom, control, "
+            "rules, flexibility."
+        ),
+    },
+    {
+        "id": "team_dynamic",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Context - Interpersonal Relationships",
+        "source": "O*NET Work Context descriptor 4.C.1",
+        "question": (
+            "How do you feel about working with other people day to day? Do you find "
+            "it energizing or draining? What's the ideal amount and type of human "
+            "interaction in your work?"
+        ),
+        "llm_instruction": (
+            "Determine interpersonal preference: solo/minimal contact "
+            "(Investigative/Realistic/Artistic), small close team "
+            "(Investigative/Artistic/Realistic), large group coordination "
+            "(Social/Enterprising/Conventional), client-facing variety "
+            "(Social/Enterprising). Note emotional tone - energized vs drained "
+            "signals Social vs Investigative strongly."
+        ),
+    },
+    {
+        "id": "impact_type",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Values - Achievement / Altruism / Recognition",
+        "source": "O*NET Work Importance Locator",
+        "question": (
+            "At the end of a really good workday, what would make you feel like it "
+            "actually mattered? What kind of difference do you want your work to make?"
+        ),
+        "llm_instruction": (
+            "Identify impact orientation: helping individuals directly (Social), "
+            "advancing knowledge or solving problems (Investigative/Realistic), "
+            "building or scaling something (Enterprising/Conventional), creating "
+            "lasting work (Artistic/Investigative). This strongly differentiates "
+            "Social from Enterprising even with similar surface answers."
+        ),
+    },
+    {
+        "id": "structure_preference",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Values - Working Conditions / Independence",
+        "source": "O*NET Work Values; Holland (1997) consistency principle",
+        "question": (
+            "How do you feel when your day has no clear agenda or plan? And on the "
+            "flip side, how do you feel when every hour is scheduled for you?"
+        ),
+        "llm_instruction": (
+            "Assess structure tolerance using both ends of the spectrum. Comfortable "
+            "with both = Enterprising/Social. Prefers no agenda = "
+            "Artistic/Investigative. Prefers full schedule = Conventional/Realistic. "
+            "Distress at ambiguity signals Conventional strongly."
+        ),
+    },
+    {
+        "id": "skill_anchor",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Skills - Core competency self-assessment",
+        "source": "Schein (1978) Career Anchors; O*NET Skills taxonomy",
+        "question": (
+            "What's something you've done - at school, a job, a project, anywhere - "
+            "where someone said 'you're really good at this' and you actually "
+            "believed them? What were you doing?"
+        ),
+        "llm_instruction": (
+            "Extract natural competency signal from concrete example. "
+            "Technical/mechanical skill = Realistic/Conventional. Analysis, research, "
+            "debugging = Investigative. Communication, empathy, coaching = Social. "
+            "Persuasion, leadership, selling = Enterprising. Creative production, "
+            "design, expression = Artistic. Concrete examples are more reliable than "
+            "self-labels - weight the activity, not the adjective."
+        ),
+    },
+    {
+        "id": "recognition",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Values - Recognition / Achievement",
+        "source": "O*NET Work Importance Locator; CareerOneStop",
+        "question": (
+            "What kind of acknowledgment or result makes your work feel worthwhile? "
+            "Is it a visible outcome, being seen as an expert, someone's gratitude, "
+            "or something else entirely?"
+        ),
+        "llm_instruction": (
+            "Identify recognition driver: tangible visible result "
+            "(Realistic/Enterprising), expert status/respect "
+            "(Investigative/Conventional), personal gratitude from those helped "
+            "(Social), creative work appreciated by others (Artistic). "
+            "Differentiates within tied codes especially I vs S and E vs A."
+        ),
+    },
+    {
+        "id": "future_concern",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Work Values - Security / Achievement",
+        "source": "Jeon et al. (2025) Letters from Future Self - concern elicitation",
+        "question": (
+            "What worries you most when you think about your career future? Not the "
+            "practical stuff like salary - what deeper fear comes up when you imagine "
+            "making the wrong choice?"
+        ),
+        "llm_instruction": (
+            "Map concern to suppressed work value: fear of instability = Security "
+            "dominant (Conventional/Realistic). Fear of meaninglessness = "
+            "Achievement/Altruism (Investigative/Social). Fear of losing creative "
+            "identity = Artistic strongly. Fear of missing impact = "
+            "Social/Enterprising. Concerns often reveal values more clearly than "
+            "stated preferences."
+        ),
+    },
+    {
+        "id": "dream_scenario",
+        "stage": CAREER_FILTERING_STAGE,
+        "onet_dimension": "Holistic career vision - narrative elicitation",
+        "source": "Jeon et al. (2025); Renji et al. (2025) cognitive profiling",
+        "question": (
+            "Five years from now, someone who knows you well runs into you and you "
+            "tell them what you've been up to. What do you want to be telling them?"
+        ),
+        "llm_instruction": (
+            "This is the highest-signal question. Extract: setting, activity, who "
+            "they're with, what they built or did. Built/fixed something real = "
+            "Realistic/Conventional. Became expert in a field = Investigative. "
+            "Running own thing or leading team = Enterprising. Created work others "
+            "connect with = Artistic. Helped people through a hard thing = Social. "
+            "Cross-reference with all prior answers for consistency. If this answer "
+            "contradicts RIASEC code, flag it as worth discussing."
+        ),
+    },
 ]
+
+ANSWER_ANALYSIS_SYSTEM_PROMPT = """You are analyzing a career exploration answer.
+
+Question asked: {question}
+User's answer: {answer}
+
+Your task:
+{llm_instruction}
+
+Output only valid JSON with:
+- dominant_categories: list of 1-3 RIASEC letters this answer supports
+- confidence: high / medium / low
+- reasoning: one sentence explaining why
+- flag: any contradiction with prior answers worth noting, or empty string
+"""
 
 
 class OpenAIChatProvider:
@@ -352,10 +286,16 @@ def build_system_prompt(
     profile_result: dict[str, Any],
     questions_asked: list[dict[str, str]] | None = None,
 ) -> str:
-    """Build the follow-up system prompt with this user's profiler context."""
-    return SYSTEM_PROMPT_TEMPLATE.replace(
-        "{context_block}",
-        _profile_context_block(profile_result, questions_asked or []),
+    """Build a compact context prompt for compatibility with older callers."""
+    return "\n".join(
+        [
+            "You are analyzing open-ended career filtering answers.",
+            f"Initial Holland code: {profile_result.get('initial_holland_code')}",
+            f"Initial top interests: {profile_result.get('initial_top_interests')}",
+            f"Current Job Zone: {profile_result.get('current_job_zone')}",
+            f"Future Job Zone: {profile_result.get('future_job_zone')}",
+            f"Previous answers: {json.dumps(questions_asked or [], ensure_ascii=True)}",
+        ]
     )
 
 
@@ -363,34 +303,10 @@ def build_followup_question_plan(
     profile_result: dict[str, Any],
     max_questions: int = MAX_FOLLOWUP_QUESTIONS,
 ) -> list[dict[str, str]]:
-    """Create a deterministic one-question-at-a-time follow-up plan."""
+    """Return the fixed open-ended career filtering question sequence."""
+    del profile_result
     max_questions = min(max(1, int(max_questions)), MAX_FOLLOWUP_QUESTIONS)
-    plan: list[dict[str, str]] = []
-
-    ambiguous = _ordered_ambiguous_categories(profile_result)
-    if len(ambiguous) >= 2:
-        for first, second in combinations(ambiguous, 2):
-            question = _tie_breaking_question(first, second)
-            if question:
-                plan.append(
-                    {
-                        "stage": TIE_BREAKING_STAGE,
-                        "question": question,
-                    }
-                )
-            if len([item for item in plan if item["stage"] == TIE_BREAKING_STAGE]) >= 3:
-                break
-
-    remaining_after_future = max_questions - len(plan) - len(FUTURE_VISION_QUESTIONS)
-    dynamic_count = min(4, max(0, remaining_after_future))
-    plan.extend(_dynamic_deepening_questions(profile_result, dynamic_count))
-
-    for question in FUTURE_VISION_QUESTIONS:
-        if len(plan) >= max_questions:
-            break
-        plan.append({"stage": FUTURE_VISION_STAGE, "question": question})
-
-    return plan[:max_questions]
+    return [dict(question) for question in CAREER_FILTERING_QUESTIONS[:max_questions]]
 
 
 def get_next_followup_question(
@@ -409,38 +325,25 @@ def record_followup_answer(
     answer: str,
     max_questions: int = MAX_FOLLOWUP_QUESTIONS,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    """Append an answer and insert one clarification for very short responses."""
+    """Append an answer without inserting any extra follow-up question."""
+    del max_questions
     current = get_next_followup_question(question_plan, questions_asked)
     if current is None:
         return question_plan, questions_asked
 
-    cleaned_answer = str(answer).strip()
     updated_answers = [
         *questions_asked,
         {
-            "stage": current["stage"],
+            "id": current.get("id", ""),
+            "stage": current.get("stage", CAREER_FILTERING_STAGE),
+            "onet_dimension": current.get("onet_dimension", ""),
+            "source": current.get("source", ""),
             "question": current["question"],
-            "answer": cleaned_answer,
+            "llm_instruction": current.get("llm_instruction", ""),
+            "answer": str(answer).strip(),
         },
     ]
-    updated_plan = list(question_plan)
-
-    if (
-        _answer_is_very_short(cleaned_answer)
-        and current.get("is_clarification") != "true"
-        and len(updated_plan) < max_questions
-        and not _stage_has_clarification(current["stage"], updated_plan, updated_answers)
-    ):
-        updated_plan.insert(
-            len(updated_answers),
-            {
-                "stage": current["stage"],
-                "question": "Could you say a little more about what makes that feel appealing or unappealing?",
-                "is_clarification": "true",
-            },
-        )
-
-    return updated_plan[:max_questions], updated_answers
+    return list(question_plan)[:MAX_FOLLOWUP_QUESTIONS], updated_answers
 
 
 def complete_followup_refinement(
@@ -448,39 +351,81 @@ def complete_followup_refinement(
     questions_asked: list[dict[str, str]],
     provider: OpenAIChatProvider | None = None,
 ) -> dict[str, Any]:
-    """Return the saved follow-up refinement object."""
+    """Analyze open-ended answers and return the saved refinement object."""
     if not questions_asked:
         return {
             "method": "initial_result_no_followup",
             "questions_asked": [],
+            "question_results": [],
+            "filtering_result": aggregate_filtering_results(
+                _initial_holland_letters(profile_result),
+                [],
+            ),
             "final_refinement": build_template_refinement(profile_result, []),
             "json_valid": True,
         }
 
     provider = provider or OpenAIChatProvider()
-    if provider.available:
-        final_refinement, json_valid, raw_response, error = _llm_final_refinement(
-            profile_result,
-            questions_asked,
-            provider,
-        )
-        refinement = {
-            "method": "llm",
-            "questions_asked": questions_asked,
-            "final_refinement": final_refinement,
-            "json_valid": json_valid,
-        }
-        if raw_response and not json_valid:
-            refinement["raw_response"] = raw_response
-        if error:
-            refinement["error"] = error
-        return refinement
+    question_results: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for item in questions_asked:
+        if provider.available:
+            try:
+                question_results.append(_llm_answer_analysis(item, provider))
+                continue
+            except Exception as exc:
+                errors.append(f"{item.get('id') or item.get('question')}: {exc}")
+        question_results.append(_template_answer_analysis(item))
 
-    return {
-        "method": "template_fallback",
+    filtering_result = aggregate_filtering_results(
+        _initial_holland_letters(profile_result),
+        question_results,
+    )
+    final_refinement = build_final_refinement_from_filtering(
+        profile_result=profile_result,
+        questions_asked=questions_asked,
+        question_results=question_results,
+        filtering_result=filtering_result,
+    )
+    result = {
+        "method": "llm_per_question" if provider.available and not errors else "template_fallback",
         "questions_asked": questions_asked,
-        "final_refinement": build_template_refinement(profile_result, questions_asked),
+        "question_results": question_results,
+        "filtering_result": filtering_result,
+        "final_refinement": final_refinement,
         "json_valid": True,
+    }
+    if errors:
+        result["analysis_errors"] = errors
+    return result
+
+
+def aggregate_filtering_results(
+    holland_code: list[str] | tuple[str, ...] | str,
+    question_results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Aggregate per-question RIASEC evidence into a refined code."""
+    original_letters = _normalize_holland_letters(holland_code)
+    votes = {cat: 0.0 for cat in "RIASEC"}
+
+    for result in question_results:
+        confidence = str(result.get("confidence") or "low").strip().lower()
+        weight = CONFIDENCE_WEIGHT.get(confidence, 0.3)
+        for category in _dominant_letters(result.get("dominant_categories")):
+            votes[category] += weight
+
+    filtered = {cat: votes[cat] for cat in original_letters}
+    ranked = sorted(
+        filtered.items(),
+        key=lambda item: (-item[1], original_letters.index(item[0])),
+    )
+    refined_letters = [cat for cat, _ in ranked] or original_letters
+    return {
+        "original_code": "".join(original_letters),
+        "refined_primary": refined_letters[0] if refined_letters else "",
+        "refined_code": "".join(refined_letters),
+        "vote_detail": {key: round(value, 4) for key, value in votes.items()},
+        "filtered_vote_detail": {key: round(value, 4) for key, value in filtered.items()},
     }
 
 
@@ -488,117 +433,104 @@ def build_template_refinement(
     profile_result: dict[str, Any],
     questions_asked: list[dict[str, str]],
 ) -> dict[str, Any]:
-    """Build a conservative no-LLM refinement without reinterpreting raw scores."""
-    initial_top = [canonical_interest(item) for item in profile_result["initial_top_interests"]]
-    ambiguity = profile_result.get("score_ambiguity") or {}
-    ambiguous = [canonical_interest(item) for item in ambiguity.get("ambiguous_categories", [])]
-    tie_was_needed = bool(ambiguity.get("has_ambiguity"))
-    resolved_order = [interest for interest in initial_top if interest in ambiguous] or ambiguous
-    future_answers = [item for item in questions_asked if item["stage"] == FUTURE_VISION_STAGE]
-    deepening_answers = [item for item in questions_asked if item["stage"] == DYNAMIC_DEEPENING_STAGE]
+    """Build a deterministic refinement when no LLM answer analyses exist."""
+    question_results = [_template_answer_analysis(item) for item in questions_asked]
+    filtering_result = aggregate_filtering_results(
+        _initial_holland_letters(profile_result),
+        question_results,
+    )
+    return build_final_refinement_from_filtering(
+        profile_result=profile_result,
+        questions_asked=questions_asked,
+        question_results=question_results,
+        filtering_result=filtering_result,
+    )
 
-    key_sub_preferences = [
-        _answer_note(item["answer"])
-        for item in deepening_answers
-        if item.get("answer")
-    ][:5]
 
-    concerns_noted = []
-    if len(future_answers) >= 2 and future_answers[1].get("answer"):
-        concerns_noted.append(_answer_note(future_answers[1]["answer"]))
+def build_final_refinement_from_filtering(
+    profile_result: dict[str, Any],
+    questions_asked: list[dict[str, str]],
+    question_results: list[dict[str, Any]],
+    filtering_result: dict[str, Any],
+) -> dict[str, Any]:
+    """Convert aggregate filtering output into the app's final refinement schema."""
+    refined_letters = list(str(filtering_result.get("refined_code") or ""))
+    refined_top = [
+        RIASEC_BY_CODE[letter]
+        for letter in refined_letters
+        if letter in RIASEC_BY_CODE
+    ]
+    if not refined_top:
+        refined_top = [canonical_interest(item) for item in profile_result["initial_top_interests"]]
+
+    original_top = [canonical_interest(item) for item in profile_result["initial_top_interests"]]
+    key_preferences = _key_sub_preferences(questions_asked, question_results)
+    future_summary = _future_vision_summary(questions_asked)
+    concerns = _concerns_noted(questions_asked)
 
     return {
         "tie_resolution": {
-            "was_needed": tie_was_needed,
-            "ambiguous_categories": ambiguous,
-            "resolved_order": resolved_order,
+            "was_needed": bool((profile_result.get("score_ambiguity") or {}).get("has_ambiguity")),
+            "ambiguous_categories": [
+                canonical_interest(item)
+                for item in (profile_result.get("score_ambiguity") or {}).get("ambiguous_categories", [])
+            ],
+            "resolved_order": refined_top,
             "reasoning_summary": (
-                "Template fallback recorded tie-breaking answers and kept the initial deterministic order."
-                if tie_was_needed
-                else "No tie-breaking was needed from the raw O*NET scores."
+                "Open-ended career filtering questions re-ordered the original Holland code "
+                f"from {', '.join(original_top)} to {', '.join(refined_top)} using weighted RIASEC votes."
             ),
         },
-        "refined_top_interests": initial_top,
-        "refined_holland_code": make_holland_code(initial_top),
-        "key_sub_preferences": key_sub_preferences,
-        "future_vision_summary": _future_vision_summary(future_answers),
-        "concerns_noted": concerns_noted,
+        "refined_top_interests": refined_top,
+        "refined_holland_code": make_holland_code(refined_top),
+        "key_sub_preferences": key_preferences,
+        "future_vision_summary": future_summary,
+        "concerns_noted": concerns,
         "career_matching_guidance": {
-            "prioritize_interests": initial_top,
+            "prioritize_interests": refined_top,
             "job_zone_to_use": int(profile_result["future_job_zone"]),
-            "notes": "Use future job zone for aspirational recommendations, current job zone for immediate options.",
+            "notes": (
+                "Use the original O*NET Interest Profiler matches as the candidate pool, "
+                "then rank them by the open-ended filtering answers and O*NET occupation signals."
+            ),
         },
         "ready_for_job_matching": True,
+        "filtering_result": filtering_result,
+        "answer_analysis_summary": question_results,
     }
 
 
 def validate_final_refinement_json(value: Any) -> dict[str, Any]:
-    """Validate the LLM final refinement JSON before saving it."""
+    """Validate an existing final refinement object for compatibility."""
     if not isinstance(value, dict):
         raise ValueError("Final refinement must be a JSON object.")
-
-    required_keys = {
-        "tie_resolution",
-        "refined_top_interests",
-        "refined_holland_code",
-        "key_sub_preferences",
-        "future_vision_summary",
-        "concerns_noted",
-        "career_matching_guidance",
-        "ready_for_job_matching",
-    }
-    missing = required_keys - set(value)
-    if missing:
-        raise ValueError(f"Final refinement missing keys: {sorted(missing)}.")
-
-    tie_resolution = value["tie_resolution"]
-    if not isinstance(tie_resolution, dict):
-        raise ValueError("tie_resolution must be an object.")
-    tie_resolution = {
-        "was_needed": bool(tie_resolution.get("was_needed")),
-        "ambiguous_categories": [
-            canonical_interest(item)
-            for item in _ensure_list(tie_resolution.get("ambiguous_categories"))
-        ],
-        "resolved_order": [
-            canonical_interest(item)
-            for item in _ensure_list(tie_resolution.get("resolved_order"))
-        ],
-        "reasoning_summary": str(tie_resolution.get("reasoning_summary") or "").strip(),
-    }
-
-    refined_top = [canonical_interest(item) for item in _ensure_list(value["refined_top_interests"])]
+    refined_top = [
+        canonical_interest(item)
+        for item in _ensure_list(value.get("refined_top_interests"))
+    ]
     if not refined_top:
         raise ValueError("refined_top_interests must contain at least one interest.")
     refined_top = refined_top[:3]
-    holland_code = str(value.get("refined_holland_code") or make_holland_code(refined_top)).strip().upper()
-    expected_code = make_holland_code(refined_top)
-    if holland_code != expected_code:
-        holland_code = expected_code
-
-    guidance = value["career_matching_guidance"]
-    if not isinstance(guidance, dict):
-        raise ValueError("career_matching_guidance must be an object.")
-    job_zone = int(guidance.get("job_zone_to_use") or 0)
+    guidance = value.get("career_matching_guidance") or {}
+    try:
+        job_zone = int(guidance.get("job_zone_to_use") or 0)
+    except (TypeError, ValueError):
+        job_zone = 0
     if job_zone not in {1, 2, 3, 4, 5}:
         raise ValueError("career_matching_guidance.job_zone_to_use must be 1-5.")
-
     return {
-        "tie_resolution": tie_resolution,
+        **value,
         "refined_top_interests": refined_top,
-        "refined_holland_code": holland_code,
-        "key_sub_preferences": [str(item).strip() for item in _ensure_list(value["key_sub_preferences"]) if str(item).strip()],
-        "future_vision_summary": str(value["future_vision_summary"]).strip(),
-        "concerns_noted": [str(item).strip() for item in _ensure_list(value["concerns_noted"]) if str(item).strip()],
+        "refined_holland_code": make_holland_code(refined_top),
         "career_matching_guidance": {
+            **guidance,
             "prioritize_interests": [
                 canonical_interest(item)
-                for item in _ensure_list(guidance.get("prioritize_interests"))
+                for item in _ensure_list(guidance.get("prioritize_interests") or refined_top)
             ][:3],
             "job_zone_to_use": job_zone,
-            "notes": str(guidance.get("notes") or "").strip(),
         },
-        "ready_for_job_matching": bool(value["ready_for_job_matching"]),
+        "ready_for_job_matching": bool(value.get("ready_for_job_matching", True)),
     }
 
 
@@ -620,155 +552,245 @@ def parse_json_object(content: str) -> dict[str, Any]:
     return parsed
 
 
-def _llm_final_refinement(
-    profile_result: dict[str, Any],
-    questions_asked: list[dict[str, str]],
+def _llm_answer_analysis(
+    item: dict[str, Any],
     provider: OpenAIChatProvider,
-) -> tuple[dict[str, Any], bool, str, str]:
-    transcript = json.dumps(questions_asked, indent=2, ensure_ascii=True)
+) -> dict[str, Any]:
     messages = [
-        {"role": "system", "content": build_system_prompt(profile_result, questions_asked)},
         {
-            "role": "user",
-            "content": (
-                "The follow-up conversation is complete. Return only valid JSON matching "
-                "the required final refinement schema. Do not include Markdown.\n\n"
-                f"Follow-up transcript:\n{transcript}"
+            "role": "system",
+            "content": ANSWER_ANALYSIS_SYSTEM_PROMPT.format(
+                question=item.get("question", ""),
+                answer=item.get("answer", ""),
+                llm_instruction=item.get("llm_instruction", ""),
             ),
         },
+        {
+            "role": "user",
+            "content": "Analyze this answer and return only the requested JSON.",
+        },
+    ]
+    raw = provider.complete(messages, temperature=0.0, response_format_json=True)
+    return _validate_answer_analysis(parse_json_object(raw), item)
+
+
+def _validate_answer_analysis(value: Any, item: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("Answer analysis must be a JSON object.")
+    dominant = _dominant_letters(value.get("dominant_categories"))[:3]
+    if not dominant:
+        dominant = _template_answer_analysis(item)["dominant_categories"]
+    confidence = str(value.get("confidence") or "low").strip().lower()
+    if confidence not in CONFIDENCE_WEIGHT:
+        confidence = "low"
+    return {
+        "question_id": item.get("id", ""),
+        "dominant_categories": dominant,
+        "confidence": confidence,
+        "reasoning": _clean_text(value.get("reasoning")),
+        "flag": _clean_text(value.get("flag")),
+    }
+
+
+def _template_answer_analysis(item: dict[str, Any]) -> dict[str, Any]:
+    answer = _normalize(item.get("answer"))
+    question_id = str(item.get("id") or "")
+    scores = {letter: 0 for letter in "RIASEC"}
+
+    keyword_scores = {
+        "R": [
+            "outdoor",
+            "outside",
+            "field",
+            "physical",
+            "hands",
+            "tools",
+            "machines",
+            "equipment",
+            "build",
+            "fix",
+            "repair",
+            "technical",
+        ],
+        "I": [
+            "research",
+            "analyze",
+            "analysis",
+            "data",
+            "information",
+            "science",
+            "problem",
+            "debug",
+            "expert",
+            "knowledge",
+            "understand",
+        ],
+        "A": [
+            "creative",
+            "design",
+            "art",
+            "write",
+            "writing",
+            "music",
+            "visual",
+            "flexible",
+            "original",
+            "create",
+        ],
+        "S": [
+            "people",
+            "help",
+            "support",
+            "teach",
+            "coach",
+            "empathy",
+            "gratitude",
+            "community",
+            "client",
+            "human",
+        ],
+        "E": [
+            "lead",
+            "leader",
+            "sell",
+            "persuade",
+            "business",
+            "startup",
+            "run",
+            "scale",
+            "manage",
+            "visible",
+        ],
+        "C": [
+            "structure",
+            "schedule",
+            "organized",
+            "process",
+            "rules",
+            "office",
+            "stable",
+            "security",
+            "records",
+            "clear",
+        ],
+    }
+    for letter, keywords in keyword_scores.items():
+        scores[letter] += sum(1 for keyword in keywords if keyword in answer)
+
+    fallback_by_question = {
+        "work_setting": ["R", "I", "C"],
+        "work_with": ["S", "I", "R"],
+        "independence": ["A", "I", "E"],
+        "team_dynamic": ["S", "E", "I"],
+        "impact_type": ["S", "I", "E"],
+        "structure_preference": ["C", "R", "I"],
+        "skill_anchor": ["I", "S", "R"],
+        "recognition": ["I", "S", "E"],
+        "future_concern": ["C", "S", "I"],
+        "dream_scenario": ["I", "E", "S"],
+    }
+    ranked = sorted(scores.items(), key=lambda item_score: (-item_score[1], item_score[0]))
+    dominant = [letter for letter, score in ranked if score > 0][:3]
+    if not dominant:
+        dominant = fallback_by_question.get(question_id, ["I"])[:1]
+    confidence = "high" if ranked and ranked[0][1] >= 3 else "medium" if ranked and ranked[0][1] >= 1 else "low"
+    return {
+        "question_id": question_id,
+        "dominant_categories": dominant,
+        "confidence": confidence,
+        "reasoning": (
+            "Template analysis matched answer keywords to the supplied O*NET/Holland filtering instruction."
+        ),
+        "flag": "",
+    }
+
+
+def _key_sub_preferences(
+    questions_asked: list[dict[str, str]],
+    question_results: list[dict[str, Any]],
+) -> list[str]:
+    by_id = {result.get("question_id"): result for result in question_results}
+    preferences = []
+    for item in questions_asked:
+        answer = _clean_text(item.get("answer"))
+        if not answer:
+            continue
+        result = by_id.get(item.get("id")) or {}
+        cats = "".join(result.get("dominant_categories") or [])
+        preferences.append(f"{item.get('id')}: {cats} - {_shorten(answer, 120)}")
+    return preferences[:10]
+
+
+def _future_vision_summary(questions_asked: list[dict[str, str]]) -> str:
+    dream = _answer_for_id(questions_asked, "dream_scenario")
+    impact = _answer_for_id(questions_asked, "impact_type")
+    if dream and impact:
+        return f"Dream scenario: {dream} Desired impact: {impact}"
+    if dream:
+        return f"Dream scenario: {dream}"
+    if impact:
+        return f"Desired impact: {impact}"
+    return "Open-ended filtering answers were recorded."
+
+
+def _concerns_noted(questions_asked: list[dict[str, str]]) -> list[str]:
+    concern = _answer_for_id(questions_asked, "future_concern")
+    return [concern] if concern else []
+
+
+def _answer_for_id(questions_asked: list[dict[str, str]], question_id: str) -> str:
+    for item in questions_asked:
+        if item.get("id") == question_id:
+            return _clean_text(item.get("answer"))
+    return ""
+
+
+def _initial_holland_letters(profile_result: dict[str, Any]) -> list[str]:
+    code = (
+        profile_result.get("initial_holland_code")
+        or profile_result.get("initial_code")
+        or profile_result.get("holland_code")
+        or ""
+    )
+    letters = _normalize_holland_letters(str(code))
+    if letters:
+        return letters
+    return [
+        RIASEC_CODES[canonical_interest(interest)]
+        for interest in profile_result.get("initial_top_interests", [])[:3]
     ]
 
-    raw_response = ""
-    try:
-        raw_response = provider.complete(messages, temperature=0.2, response_format_json=True)
-        parsed = parse_json_object(raw_response)
-        return validate_final_refinement_json(parsed), True, raw_response, ""
-    except Exception as first_error:
-        repair_messages = [
-            {
-                "role": "system",
-                "content": "Repair the user's invalid JSON. Return only one valid JSON object.",
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Error: {first_error}\n\n"
-                    f"Invalid response:\n{raw_response}\n\n"
-                    "Return valid JSON matching the Interest Profiler final refinement schema."
-                ),
-            },
-        ]
+
+def _normalize_holland_letters(value: list[str] | tuple[str, ...] | str) -> list[str]:
+    raw = list(value) if not isinstance(value, str) else list(value)
+    letters = []
+    for item in raw:
+        text = str(item).strip()
+        if not text:
+            continue
+        if len(text) == 1 and text.upper() in RIASEC_BY_CODE:
+            letter = text.upper()
+        else:
+            letter = RIASEC_CODES[canonical_interest(text)]
+        if letter not in letters:
+            letters.append(letter)
+    return letters[:3]
+
+
+def _dominant_letters(value: Any) -> list[str]:
+    values = value if isinstance(value, list) else [value]
+    letters = []
+    for item in values:
+        text = str(item or "").strip()
+        if not text:
+            continue
         try:
-            repaired = provider.complete(repair_messages, temperature=0.0, response_format_json=True)
-            parsed = parse_json_object(repaired)
-            return validate_final_refinement_json(parsed), True, repaired, ""
-        except Exception as second_error:
-            fallback = build_template_refinement(profile_result, questions_asked)
-            return fallback, False, raw_response, str(second_error)
-
-
-def _profile_context_block(
-    profile_result: dict[str, Any],
-    questions_asked: list[dict[str, str]],
-) -> str:
-    raw_scores = profile_result.get("raw_riasec_scores") or {}
-    ambiguity = profile_result.get("score_ambiguity") or {}
-    return "\n".join(
-        [
-            f"Raw RIASEC scores: {json.dumps(raw_scores, ensure_ascii=True)}",
-            f"Initial top 3 interests: {profile_result.get('initial_top_interests')}",
-            f"Initial Holland code: {profile_result.get('initial_holland_code')}",
-            f"Current Job Zone: {profile_result.get('current_job_zone')}",
-            f"Future Job Zone: {profile_result.get('future_job_zone')}",
-            f"Ambiguous categories: {ambiguity.get('ambiguous_categories', [])}",
-            f"Previous answers: {json.dumps(questions_asked, ensure_ascii=True)}",
-        ]
-    )
-
-
-def _ordered_ambiguous_categories(profile_result: dict[str, Any]) -> list[str]:
-    ambiguity = profile_result.get("score_ambiguity") or {}
-    if not ambiguity.get("has_ambiguity"):
-        return []
-    ambiguous = [canonical_interest(item) for item in ambiguity.get("ambiguous_categories", [])]
-    top_order = [canonical_interest(item) for item in profile_result.get("initial_top_interests", [])]
-    ordered = [interest for interest in top_order if interest in ambiguous]
-    ordered.extend([interest for interest in RIASEC_INTERESTS if interest in ambiguous and interest not in ordered])
-    return ordered
-
-
-def _tie_breaking_question(first: str, second: str) -> str | None:
-    first = canonical_interest(first)
-    second = canonical_interest(second)
-    ordered = tuple(sorted((first, second), key=RIASEC_INTERESTS.index))
-    return TIE_BREAKING_QUESTIONS.get(ordered)
-
-
-def _dynamic_deepening_questions(
-    profile_result: dict[str, Any],
-    count: int,
-) -> list[dict[str, str]]:
-    if count <= 0:
-        return []
-    top_interests = [canonical_interest(item) for item in profile_result.get("initial_top_interests", [])]
-    questions: list[dict[str, str]] = []
-    template_index = 0
-    while len(questions) < count and template_index < 2:
-        for interest in top_interests:
-            templates = DYNAMIC_QUESTION_TEMPLATES.get(interest, [])
-            if template_index < len(templates):
-                questions.append(
-                    {
-                        "stage": DYNAMIC_DEEPENING_STAGE,
-                        "question": templates[template_index],
-                    }
-                )
-                if len(questions) >= count:
-                    break
-        template_index += 1
-    return questions
-
-
-def _answer_is_very_short(answer: str) -> bool:
-    words = [word for word in answer.strip().split() if word]
-    return len(words) <= 2 or len(answer.strip()) < 12
-
-
-def _stage_has_clarification(
-    stage: str,
-    question_plan: list[dict[str, str]],
-    questions_asked: list[dict[str, str]],
-) -> bool:
-    planned = any(
-        item.get("stage") == stage and item.get("is_clarification") == "true"
-        for item in question_plan
-    )
-    asked = any(
-        item.get("stage") == stage and item.get("is_clarification") == "true"
-        for item in questions_asked
-    )
-    return planned or asked
-
-
-def _answer_note(answer: str, max_chars: int = 140) -> str:
-    cleaned = " ".join(str(answer).split())
-    if len(cleaned) > max_chars:
-        cleaned = cleaned[: max_chars - 3].rstrip() + "..."
-    return f"User mentioned: {cleaned}"
-
-
-def _future_vision_summary(future_answers: list[dict[str, str]]) -> str:
-    if not future_answers:
-        return "No future-vision answers were recorded."
-    answers = [item.get("answer", "").strip() for item in future_answers]
-    parts: list[str] = []
-    if len(answers) >= 1 and answers[0]:
-        parts.append(f"Five-year workday image: {answers[0]}")
-    if len(answers) >= 2 and answers[1]:
-        parts.append(f"Career concern: {answers[1]}")
-    if len(answers) >= 3 and answers[2]:
-        parts.append(f"Stretch interest: {answers[2]}")
-    return " ".join(parts) or "Future-vision answers were recorded but left mostly blank."
+            letter = text.upper() if len(text) == 1 else RIASEC_CODES[canonical_interest(text)]
+        except ValueError:
+            continue
+        if letter in RIASEC_BY_CODE and letter not in letters:
+            letters.append(letter)
+    return letters
 
 
 def _ensure_list(value: Any) -> list[Any]:
@@ -777,3 +799,20 @@ def _ensure_list(value: Any) -> list[Any]:
     if isinstance(value, list):
         return value
     return [value]
+
+
+def _normalize(value: Any) -> str:
+    text = str(value or "").lower().replace("&", " and ")
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _clean_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
+def _shorten(value: Any, limit: int) -> str:
+    text = _clean_text(value)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."

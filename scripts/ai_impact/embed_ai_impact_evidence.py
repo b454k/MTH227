@@ -13,38 +13,24 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-try:
-    from career_rag.config import (
-        EMBEDDING_MODEL_NAME,
-        EXPECTED_EMBEDDING_DIMENSION,
-        embedding_model_mismatch_message,
-        quiet_huggingface_model_load,
-        require_configured_embedding_model,
-        require_hf_token,
-    )
-    from career_rag.ai_exposure_utils import (
-        PROJECT_ROOT,
-        chroma_scalar,
-        one_line,
-        read_jsonl,
-        resolve_project_path,
-    )
-except ImportError:  # Allows: py career_rag/embed_ai_impact_evidence.py
-    from config import (  # type: ignore
-        EMBEDDING_MODEL_NAME,
-        EXPECTED_EMBEDDING_DIMENSION,
-        embedding_model_mismatch_message,
-        quiet_huggingface_model_load,
-        require_configured_embedding_model,
-        require_hf_token,
-    )
-    from ai_exposure_utils import (  # type: ignore
-        PROJECT_ROOT,
-        chroma_scalar,
-        one_line,
-        read_jsonl,
-        resolve_project_path,
-    )
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from career_rag.ai_exposure_utils import (
+    chroma_scalar,
+    one_line,
+    read_jsonl,
+    resolve_project_path,
+)
+from career_rag.config import (
+    EMBEDDING_MODEL_NAME,
+    EXPECTED_EMBEDDING_DIMENSION,
+    embedding_model_mismatch_message,
+    quiet_huggingface_model_load,
+    require_configured_embedding_model,
+    require_hf_token,
+)
 
 
 DEFAULT_AI_INPUT = PROJECT_ROOT / "data" / "processed" / "ai_impact_evidence_deduped.jsonl"

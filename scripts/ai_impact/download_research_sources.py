@@ -14,30 +14,20 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
-try:
-    from career_rag.ai_exposure_utils import (
-        PROJECT_ROOT,
-        created_at,
-        detect_source_policy,
-        one_line,
-        resolve_project_path,
-        sha256_file,
-        short_hash,
-        slugify,
-        write_jsonl,
-    )
-except ImportError:  # Allows: py career_rag/download_research_sources.py
-    from ai_exposure_utils import (  # type: ignore
-        PROJECT_ROOT,
-        created_at,
-        detect_source_policy,
-        one_line,
-        resolve_project_path,
-        sha256_file,
-        short_hash,
-        slugify,
-        write_jsonl,
-    )
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from career_rag.ai_exposure_utils import (
+    created_at,
+    detect_source_policy,
+    one_line,
+    resolve_project_path,
+    sha256_file,
+    short_hash,
+    slugify,
+    write_jsonl,
+)
 
 
 DEFAULT_SOURCE_FILE = PROJECT_ROOT / "data" / "research" / "source_urls.txt"
@@ -409,4 +399,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

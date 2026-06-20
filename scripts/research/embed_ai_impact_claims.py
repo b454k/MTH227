@@ -15,28 +15,19 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-try:
-    from career_rag.config import (
-        BGE_QUERY_PREFIX,
-        EMBEDDING_MODEL_NAME,
-        EXPECTED_EMBEDDING_DIMENSION,
-        embedding_model_mismatch_message,
-        quiet_huggingface_model_load,
-        require_configured_embedding_model,
-        require_hf_token,
-    )
-except ImportError:  # Allows: py career_rag/embed_ai_impact_claims.py
-    from config import (  # type: ignore
-        BGE_QUERY_PREFIX,
-        EMBEDDING_MODEL_NAME,
-        EXPECTED_EMBEDDING_DIMENSION,
-        embedding_model_mismatch_message,
-        quiet_huggingface_model_load,
-        require_configured_embedding_model,
-        require_hf_token,
-    )
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from career_rag.config import (
+    BGE_QUERY_PREFIX,
+    EMBEDDING_MODEL_NAME,
+    EXPECTED_EMBEDDING_DIMENSION,
+    embedding_model_mismatch_message,
+    quiet_huggingface_model_load,
+    require_configured_embedding_model,
+    require_hf_token,
+)
 
 DEFAULT_INPUT = PROJECT_ROOT / "data" / "research" / "ai_impact_claims.jsonl"
 DEFAULT_PERSIST_DIR = PROJECT_ROOT / "chroma_research"
