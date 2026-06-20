@@ -1,0 +1,597 @@
+{
+  "source": "onet_interest_profiler_short_form_pdf_local",
+  "raw_riasec_scores": {
+    "Realistic": 1,
+    "Investigative": 4,
+    "Artistic": 2,
+    "Social": 4,
+    "Enterprising": 2,
+    "Conventional": 0
+  },
+  "score_ambiguity": {
+    "has_ambiguity": true,
+    "reason": "Top categories are tied or within 1 point.",
+    "ambiguous_categories": [
+      "Investigative",
+      "Social"
+    ]
+  },
+  "initial_top_interests": [
+    "Investigative",
+    "Social",
+    "Artistic"
+  ],
+  "initial_holland_code": "ISA",
+  "current_job_zone": 4,
+  "future_job_zone": 5,
+  "career_matches": {
+    "primary_current_zone": [
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Aerospace Engineers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Agricultural Engineers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Bioengineers & Biomedical Engineers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Bioinformatics Technicians",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Chemists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Clinical Research Coordinators",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Cytogenetic Technologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Data Scientists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Digital Forensics Analysts",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Environmental Scientists & Specialists, Including Health",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Food Scientists & Technologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Health Informatics Specialists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Medical & Clinical Laboratory Technologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Occupational Health & Safety Specialists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Penetration Testers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Software Developers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Software Quality Assurance Analysts & Testers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Sustainability Specialists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Validation Engineers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 4,
+        "job_zone_label": "Considerable Preparation Needed",
+        "career_title": "Water Resource Specialists",
+        "assignment_note": null
+      }
+    ],
+    "primary_future_zone": [
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Animal Scientists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Audiologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Climate Change Policy Analysts",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Economists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Environmental Restoration Planners",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Financial Quantitative Analysts",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Genetic Counselors",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Human Factors Engineers & Ergonomists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Industrial-Organizational Psychologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Industrial Ecologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Medical Scientists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Natural Sciences Managers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Nurse Practitioners",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Operations Research Analysts",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Optometrists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Orthodontists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Physicists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Political Scientists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Soil & Plant Scientists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Investigative",
+        "interest_code": "I",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Statisticians",
+        "assignment_note": null
+      }
+    ],
+    "secondary_future_zone": [
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Acupuncturists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Agricultural Sciences Teachers, Postsecondary",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Athletic Trainers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Biological Science Teachers, Postsecondary",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Business Teachers, Postsecondary",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Clinical & Counseling Psychologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Clinical Nurse Specialists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Dietitians & Nutritionists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Educational, Guidance, & Career Counselors & Advisors",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Engineering Teachers, Postsecondary",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Health Specialties Teachers, Postsecondary",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Healthcare Social Workers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Marriage & Family Therapists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Midwives",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Nurse Anesthetists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Occupational Therapists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Physical Therapists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Physician Assistants",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Speech-Language Pathologists",
+        "assignment_note": null
+      },
+      {
+        "interest": "Social",
+        "interest_code": "S",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Substance Abuse & Behavioral Disorder Counselors",
+        "assignment_note": null
+      }
+    ],
+    "tertiary_future_zone": [
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Architects",
+        "assignment_note": "assigned_based_on_second_highest_interest"
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Architecture Teachers, Postsecondary",
+        "assignment_note": "assigned_based_on_third_highest_interest"
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Art Therapists",
+        "assignment_note": "assigned_based_on_second_highest_interest"
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Art, Drama, & Music Teachers, Postsecondary",
+        "assignment_note": "assigned_based_on_second_highest_interest"
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "English Language & Literature Teachers, Postsecondary",
+        "assignment_note": "assigned_based_on_third_highest_interest"
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Political Scientists",
+        "assignment_note": "assigned_based_on_second_highest_interest"
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Set & Exhibit Designers",
+        "assignment_note": null
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Sociologists",
+        "assignment_note": "assigned_based_on_third_highest_interest"
+      },
+      {
+        "interest": "Artistic",
+        "interest_code": "A",
+        "job_zone": 5,
+        "job_zone_label": "Extensive Preparation Needed",
+        "career_title": "Special Education Teachers, Preschool",
+        "assignment_note": "assigned_based_on_second_highest_interest"
+      }
+    ]
+  },
+  "followup_refinement": null,
+  "final_top_interests": [
+    "Investigative",
+    "Social",
+    "Artistic"
+  ],
+  "final_holland_code": "ISA",
+  "ready_for_rag": true
+}

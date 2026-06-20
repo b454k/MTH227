@@ -1,0 +1,4090 @@
+[
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Agricultural Equipment Operators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Baristas",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Cement Masons & Concrete Finishers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Conveyor Operators & Tenders",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Cooks, Fast Food",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Dining Room & Cafeteria Attendants & Bartender Helpers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Dishwashers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Farmworkers & Laborers, Crop, Nursery, & Greenhouse",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Fast Food & Counter Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Fishing & Hunting Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Food Preparation Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Landscaping & Groundskeeping Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Laundry & Dry-Cleaning Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Logging Equipment Operators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Maids & Housekeeping Cleaners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Meat, Poultry, & Fish Cutters & Trimmers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Plasterers & Stucco Masons",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Roustabouts, Oil & Gas",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Septic Tank Servicers & Sewer Pipe Cleaners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Sewing Machine Operators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Animal Caretakers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Athletes & Sports Competitors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Baggage Porters & Bellhops",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Bakers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Bartenders",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Bus Drivers, Transit & Intercity",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Construction Laborers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Cooks, Restaurant",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Electrical & Electronic Equipment Assemblers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Heavy & Tractor-Trailer Truck Drivers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Laborers & Freight, Stock, & Material Movers, Hand",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Light Truck Drivers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Manicurists & Pedicurists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Medical Equipment Preparers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Recycling & Reclamation Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Security Guards",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Solar Photovoltaic Installers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Telecommunications Line Installers & Repairers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Tile & Stone Setters",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Veterinary Assistants & Laboratory Animal Caretakers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Aerospace Engineering & Operations Technologists & Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Audio & Video Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Electrical & Electronics Installers & Repairers, Transportation Equipment",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Electricians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Farm Equipment Mechanics & Service Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Food Science Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Forest Fire Inspectors & Prevention Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Hairdressers, Hairstylists, & Cosmetologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Heating, Air Conditioning, & Refrigeration Mechanics & Installers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Janitors & Cleaners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Maintenance & Repair Workers, General",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Medical & Clinical Laboratory Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Motorboat Mechanics & Service Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Occupational Health & Safety Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Phlebotomists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Precision Agriculture Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Radiologic Technologists & Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Surgical Technologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Veterinary Technologists & Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Wind Turbine Service Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Airline Pilots, Copilots, & Flight Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Automotive Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Biological Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Chemical Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Civil Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Computer Hardware Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Electronics Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Exercise Physiologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Fuel Cell Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Geodetic Surveyors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Geological Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Manufacturing Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Materials Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Mechanical Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Museum Technicians & Conservators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Range Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Remote Sensing Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Solar Energy Systems Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Transportation Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Water/Wastewater Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Adapted Physical Education Specialists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Anthropologists & Archeologists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Architects",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Astronomers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Athletic Trainers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Chiropractors",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Cytotechnologists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Dentists, General",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Dermatologists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Environmental Restoration Planners",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Geoscientists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Human Factors Engineers & Ergonomists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Microsystems Engineers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Nurse Anesthetists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Orthodontists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Orthopedic Surgeons",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Orthotists & Prosthetists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Prosthodontists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Soil & Plant Scientists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Realistic",
+    "interest_code": "R",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Veterinarians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Agricultural Inspectors",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Animal Control Workers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Biofuels Processing Technicians",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Chemical Equipment Operators & Tenders",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Chemical Plant & System Operators",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Dental Laboratory Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Earth Drillers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Electrical & Electronic Equipment Assemblers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Electromechanical Equipment Assemblers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Endoscopy Technicians",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Explosives Workers, Ordnance Handling Experts, & Blasters",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Geothermal Technicians",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Inspectors, Testers, Sorters, Samplers, & Weighers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Locomotive Engineers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Medical Equipment Preparers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Non-Destructive Testing Specialists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Operating Engineers & Other Construction Equipment Operators",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Psychiatric Aides",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Transportation Vehicle, Equipment & Systems Inspectors",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Veterinary Assistants & Laboratory Animal Caretakers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Cardiovascular Technologists & Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Chemical Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Civil Engineering Technologists & Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Commercial Divers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Computer Systems Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Coroners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Detectives & Criminal Investigators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Electrical & Electronic Engineering Technologists & Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Forensic Science Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Health Information Technologists & Medical Registrars",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Hearing Aid Specialists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Medical Appliance Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Medical Dosimetrists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Neurodiagnostic Technologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Paralegals & Legal Assistants",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Precision Agriculture Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Psychiatric Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Quality Control Analysts",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Veterinary Technologists & Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Web Developers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Aerospace Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Agricultural Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Bioengineers & Biomedical Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Bioinformatics Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Chemists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Clinical Research Coordinators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Cytogenetic Technologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Data Scientists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Digital Forensics Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Environmental Scientists & Specialists, Including Health",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Food Scientists & Technologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Health Informatics Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Medical & Clinical Laboratory Technologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Occupational Health & Safety Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Penetration Testers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Software Developers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Software Quality Assurance Analysts & Testers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Sustainability Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Validation Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Water Resource Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Animal Scientists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Audiologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Climate Change Policy Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Economists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Environmental Restoration Planners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Financial Quantitative Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Genetic Counselors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Human Factors Engineers & Ergonomists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Industrial-Organizational Psychologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Industrial Ecologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Medical Scientists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Natural Sciences Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Nurse Practitioners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Operations Research Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Optometrists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Orthodontists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Physicists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Political Scientists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Soil & Plant Scientists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Investigative",
+    "interest_code": "I",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Statisticians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Painting, Coating, & Decorating Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Actors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Childcare Workers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Costume Attendants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Disc Jockeys",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Etchers & Engravers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Floral Designers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Furniture Finishers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Models",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Nannies",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Paperhangers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Photographic Process Workers & Processing Machine Operators",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Sewers, Hand",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Shoe & Leather Workers & Repairers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Stone Cutters & Carvers, Manufacturing",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Tailors, Dressmakers, & Custom Sewers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Upholsterers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Architectural & Civil Drafters",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Camera Operators, Television, Video, & Film",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Craft Artists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Dancers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Desktop Publishers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Fabric & Apparel Patternmakers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Fashion Designers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Fine Artists, Including Painters, Sculptors, & Illustrators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Jewelers & Precious Stone & Metal Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Makeup Artists, Theatrical & Performance",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Merchandise Displayers & Window Trimmers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Model Makers, Wood",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Musical Instrument Repairers & Tuners",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Patternmakers, Metal & Plastic",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Patternmakers, Wood",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Photographers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Preschool Teachers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Self-Enrichment Teachers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Sound Engineering Technicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Art Directors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Broadcast Announcers & Radio Disc Jockeys",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Choreographers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Commercial & Industrial Designers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Editors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Film & Video Editors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Graphic Designers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Interior Designers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Kindergarten Teachers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Music Directors & Composers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Music Therapists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Musicians & Singers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "News Analysts, Reporters, & Journalists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Poets, Lyricists & Creative Writers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Producers & Directors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Special Effects Artists & Animators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Talent Directors",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Video Game Designers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Web & Digital Interface Designers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Writers & Authors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Architects",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Architecture Teachers, Postsecondary",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Art Therapists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Art, Drama, & Music Teachers, Postsecondary",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "English Language & Literature Teachers, Postsecondary",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Political Scientists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Set & Exhibit Designers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Sociologists",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Artistic",
+    "interest_code": "A",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Special Education Teachers, Preschool",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Amusement & Recreation Attendants",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Baristas",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Dining Room & Cafeteria Attendants & Bartender Helpers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Animal Caretakers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Animal Trainers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Childcare Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Food Servers, Nonrestaurant",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Funeral Attendants",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Home Health Aides",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Hosts & Hostesses, Restaurant, Lounge, & Coffee Shop",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Hotel, Motel, & Resort Desk Clerks",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Lifeguards, Ski Patrol, & Other Recreational Protective Service Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Medical Secretaries & Administrative Assistants",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Nannies",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Passenger Attendants",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Personal Care Aides",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Physical Therapist Aides",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Psychiatric Aides",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "School Bus Monitors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Shampooers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Travel Guides",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Ushers, Lobby Attendants, & Ticket Takers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Waiters & Waitresses",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Acute Care Nurses",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Concierges",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Dental Hygienists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Emergency Medical Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Exercise Trainers & Group Fitness Instructors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Hearing Aid Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Licensed Practical & Licensed Vocational Nurses",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Massage Therapists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Nursing Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Occupational Therapy Aides",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Occupational Therapy Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Paramedics",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Patient Representatives",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Physical Therapist Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Preschool Teachers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Psychiatric Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Residential Advisors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Respiratory Therapists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Speech-Language Pathology Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Tour Guides & Escorts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Career/Technical Education Teachers, Secondary School",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Child, Family, & School Social Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Coaches & Scouts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Community Health Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Critical Care Nurses",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Directors, Religious Activities & Education",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Education & Childcare Administrators, Preschool & Daycare",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Elementary School Teachers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Fitness & Wellness Coordinators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Health Education Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Middle School Teachers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Music Therapists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Park Naturalists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Probation Officers & Correctional Treatment Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Recreation Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Recreational Therapists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Registered Nurses",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Social & Human Service Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Special Education Teachers, Secondary School",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Training & Development Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Acupuncturists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Agricultural Sciences Teachers, Postsecondary",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Athletic Trainers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Biological Science Teachers, Postsecondary",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Business Teachers, Postsecondary",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Clinical & Counseling Psychologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Clinical Nurse Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Dietitians & Nutritionists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Educational, Guidance, & Career Counselors & Advisors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Engineering Teachers, Postsecondary",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Health Specialties Teachers, Postsecondary",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Healthcare Social Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Marriage & Family Therapists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Midwives",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Nurse Anesthetists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Occupational Therapists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Physical Therapists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Physician Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Speech-Language Pathologists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Social",
+    "interest_code": "S",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Substance Abuse & Behavioral Disorder Counselors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Cooks, Fast Food",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Door-to-Door Sales Workers, News & Street Vendors, & Related Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Fast Food & Counter Workers",
+    "assignment_note": "assigned_based_on_third_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Aircraft Cargo Handling Supervisors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Demonstrators & Product Promoters",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Farm Labor Contractors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "First-Line Supervisors of Entertainment & Recreation Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "First-Line Supervisors of Food Preparation & Serving Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "First-Line Supervisors of Gambling Services Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "First-Line Supervisors of Helpers, Laborers, & Material Movers, Hand",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "First-Line Supervisors of Housekeeping & Janitorial Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "First-Line Supervisors of Retail Sales Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "First-Line Supervisors of Security Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Food Service Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Gambling Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Hosts & Hostesses, Restaurant, Lounge, & Coffee Shop",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Postmasters & Mail Superintendents",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Recycling Coordinators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Retail Salespersons",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Sales Representatives of Services",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Telemarketers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Travel Guides",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Umpires, Referees, & Other Sports Officials",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Administrative Services Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Chefs & Head Cooks",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Compliance Officers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Customs Brokers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Facilities Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "First-Line Supervisors of Firefighting & Prevention Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "First-Line Supervisors of Material-Moving Machine & Vehicle Operators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "First-Line Supervisors of Office & Administrative Support Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "First-Line Supervisors of Passenger Attendants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "First-Line Supervisors of Personal Service Workers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "First-Line Supervisors of Police & Detectives",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Funeral Home Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Government Property Inspectors & Investigators",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Private Detectives & Investigators",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Real Estate Sales Agents",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Solar Sales Representatives & Assessors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Spa Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Tour Guides & Escorts",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Travel Agents",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Wind Energy Operations Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Agents & Business Managers of Artists, Performers, & Athletes",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Construction Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Equal Opportunity Representatives & Officers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Financial Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Fundraisers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "General & Operations Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Human Resources Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Human Resources Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Information Technology Project Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Insurance Sales Agents",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Marketing Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Media Programming Directors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Meeting, Convention, & Event Planners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Personal Financial Advisors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Project Management Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Public Relations Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Search Marketing Strategists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Social & Community Service Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Training & Development Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Transportation, Storage, & Distribution Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Administrative Law Judges, Adjudicators, & Hearing Officers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Arbitrators, Mediators, & Conciliators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Architectural & Engineering Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Chief Executives",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Chief Sustainability Officers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Clergy",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Climate Change Policy Analysts",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Curators",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Education Administrators, Kindergarten through Secondary",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Education Administrators, Postsecondary",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Educational, Guidance, & Career Counselors & Advisors",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Environmental Economists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Industrial-Organizational Psychologists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Instructional Coordinators",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Investment Fund Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Judges, Magistrate Judges, & Magistrates",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Judicial Law Clerks",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Lawyers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Natural Sciences Managers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Enterprising",
+    "interest_code": "E",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Urban & Regional Planners",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Agricultural Equipment Operators",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Amusement & Recreation Attendants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Baristas",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Conveyor Operators & Tenders",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Cooks, Fast Food",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Derrick Operators, Oil & Gas",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Dining Room & Cafeteria Attendants & Bartender Helpers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Dishwashers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Fallers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Fast Food & Counter Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Fishing & Hunting Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Food Preparation Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Graders & Sorters, Agricultural Products",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Landscaping & Groundskeeping Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Laundry & Dry-Cleaning Workers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Maids & Housekeeping Cleaners",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Meat, Poultry, & Fish Cutters & Trimmers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Plasterers & Stucco Masons",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Septic Tank Servicers & Sewer Pipe Cleaners",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 1,
+    "job_zone_label": "Little or No Preparation Needed",
+    "career_title": "Sewing Machine Operators",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Cargo & Freight Agents",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Cashiers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Customer Service Representatives",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Flight Attendants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Freight Forwarders",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Gambling Dealers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Hotel, Motel, & Resort Desk Clerks",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Locker Room, Coatroom, & Dressing Room Attendants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Medical Secretaries & Administrative Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Office Clerks, General",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Pharmacy Aides",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Production, Planning, & Expediting Clerks",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Public Safety Telecommunicators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Receptionists & Information Clerks",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Retail Loss Prevention Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Secretaries & Administrative Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Stockers & Order Fillers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Tellers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Title Examiners, Abstractors, & Searchers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 2,
+    "job_zone_label": "Some Preparation Needed",
+    "career_title": "Transportation Security Screeners",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Airfield Operations Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Bookkeeping, Accounting, & Auditing Clerks",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Compliance Officers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Computer Numerically Controlled Tool Programmers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Computer User Support Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Customs Brokers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Dental Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Energy Auditors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Government Property Inspectors & Investigators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Health Information Technologists & Medical Registrars",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Medical Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Medical Records Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Opticians, Dispensing",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Paralegals & Legal Assistants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Pharmacy Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Police Identification & Records Officers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Private Detectives & Investigators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Tax Preparers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Telecommunications Engineering Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 3,
+    "job_zone_label": "Medium Preparation Needed",
+    "career_title": "Web Developers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Accountants & Auditors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Appraisers & Assessors of Real Estate",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Blockchain Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Business Intelligence Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Clinical Data Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Compensation, Benefits, & Job Analysis Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Computer & Information Systems Managers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Database Administrators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Environmental Compliance Inspectors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Geographic Information Systems Technologists & Technicians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Industrial Engineers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Information Security Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Logisticians",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Management Analysts",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Online Merchants",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Regulatory Affairs Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Security Management Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Surveyors",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Technical Writers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 4,
+    "job_zone_label": "Considerable Preparation Needed",
+    "career_title": "Web Administrators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Administrative Law Judges, Adjudicators, & Hearing Officers",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Anesthesiologist Assistants",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Arbitrators, Mediators, & Conciliators",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Archivists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Biostatisticians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Computer & Information Research Scientists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Curators",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Economists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Financial Quantitative Analysts",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Geneticists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Investment Fund Managers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Judicial Law Clerks",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Lawyers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Librarians & Media Collections Specialists",
+    "assignment_note": null
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Mathematicians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Operations Research Analysts",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Radiologists",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Statisticians",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Survey Researchers",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  },
+  {
+    "interest": "Conventional",
+    "interest_code": "C",
+    "job_zone": 5,
+    "job_zone_label": "Extensive Preparation Needed",
+    "career_title": "Teaching Assistants, Postsecondary",
+    "assignment_note": "assigned_based_on_second_highest_interest"
+  }
+]

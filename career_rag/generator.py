@@ -8,10 +8,12 @@ user question -> optional query rewrite -> retrieve O*NET evidence -> generate a
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -329,6 +331,55 @@ def _dedupe_texts(values: list[Any]) -> list[str]:
     return deduped
 
 
+@dataclass
+class EvidenceChunk:
+    """Normalized evidence metadata used by AI-impact synthesis and source display."""
+
+    collection: str
+    source_type: str
+    source_name: str
+    title: str = ""
+    authors: str = ""
+    year: str = ""
+    url: str = ""
+    page: str = ""
+    section: str = ""
+    occupation_title: str = ""
+    soc_code: str = ""
+    task_text: str = ""
+    score: float = 0.0
+    doc_id: str = ""
+    text: str = ""
+    role: str = ""
+    source_id: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class TaskAIExposure:
+    """Task-level AI exposure interpretation separated by evidence role."""
+
+    task_text: str
+    direct_anthropic_evidence: str
+    inferred_applicability: str
+    confidence: str
+    main_reason: str
+    source_refs: list[str] = field(default_factory=list)
+
+
+@dataclass
+class AIImpactEvidencePack:
+    """All evidence used for one AI-impact answer."""
+
+    occupation_context: dict[str, Any]
+    search_queries: list[str]
+    chunks: list[EvidenceChunk]
+    task_exposures: list[TaskAIExposure]
+    ai_impact_evidence: list[dict[str, Any]] = field(default_factory=list)
+    research_inference: list[dict[str, Any]] = field(default_factory=list)
+    research_claims: list[dict[str, Any]] = field(default_factory=list)
+
+
 class CareerRAGGenerator:
     """Retrieve O*NET evidence and generate career guidance answers."""
 
@@ -583,6 +634,72 @@ class CareerRAGGenerator:
 
         return "\n\n".join(context_parts)
 
+    def format_ai_evidence_pack_context(self, pack: AIImpactEvidencePack) -> str:
+        """Format the unified AI-impact evidence pack for model prompts."""
+        context_parts: list[str] = []
+        occupation_title = self._one_line(
+            pack.occupation_context.get("occupation_title")
+        ) or "N/A"
+        soc_code = self._one_line(pack.occupation_context.get("soc_code")) or "N/A"
+        context_parts.append(
+            "\n".join(
+                [
+                    "[AI Evidence Pack]",
+                    f"Occupation: {occupation_title}",
+                    f"SOC: {soc_code}",
+                    f"Search queries: {' | '.join(pack.search_queries[:8])}",
+                ]
+            )
+        )
+
+        if pack.task_exposures:
+            rows = [
+                "Task | Direct Anthropic evidence | Inferred applicability | Confidence | Main reason",
+                "--- | --- | --- | --- | ---",
+            ]
+            for exposure in pack.task_exposures:
+                rows.append(
+                    " | ".join(
+                        [
+                            self._one_line(exposure.task_text),
+                            self._one_line(exposure.direct_anthropic_evidence),
+                            self._one_line(exposure.inferred_applicability),
+                            self._one_line(exposure.confidence),
+                            self._one_line(exposure.main_reason),
+                        ]
+                    )
+                )
+            context_parts.append("[Task AI Exposure Table Input]\n" + "\n".join(rows))
+
+        for index, chunk in enumerate(pack.chunks, 1):
+            text = self._one_line(chunk.text)
+            if chunk.source_type == "research_inference":
+                text = self._redact_numbers_for_inference(text)
+            context_parts.append(
+                "\n".join(
+                    [
+                        f"[Evidence Chunk E{index}]",
+                        f"Role: {chunk.role or 'supporting_evidence'}",
+                        f"Collection: {chunk.collection or 'N/A'}",
+                        f"Source type: {chunk.source_type or 'N/A'}",
+                        f"Source: {chunk.source_name or chunk.source_id or 'N/A'}",
+                        f"Title: {chunk.title or 'N/A'}",
+                        f"Page: {chunk.page or 'N/A'}",
+                        f"Section: {chunk.section or 'N/A'}",
+                        f"Occupation: {chunk.occupation_title or 'N/A'}",
+                        f"SOC: {chunk.soc_code or 'N/A'}",
+                        f"Task: {chunk.task_text or 'N/A'}",
+                        f"Score: {chunk.score:.4f}",
+                        "Numeric-use rule: research_inference chunks are qualitative only."
+                        if chunk.source_type == "research_inference"
+                        else "Numeric-use rule: use numbers only when present in structured metadata.",
+                        f"Text: {text}",
+                    ]
+                )
+            )
+
+        return "\n\n".join(context_parts) if context_parts else "No AI-impact evidence pack was found."
+
     def _build_expanded_research_query(
         self,
         user_question: str,
@@ -731,6 +848,7 @@ class CareerRAGGenerator:
         title_counts: dict[str, int] = {}
         soc_counts: dict[str, int] = {}
         task_texts: list[str] = []
+        fallback_task_texts: list[str] = []
         first_title: str | None = None
         first_soc: str | None = None
 
@@ -754,14 +872,20 @@ class CareerRAGGenerator:
             if soc:
                 soc_counts[soc] = soc_counts.get(soc, 0) + 1
             if (first_soc and soc == first_soc) or (not first_soc and title == first_title):
-                task_texts.extend(self._extract_task_lines(item.get("text")))
+                section = self._one_line(metadata.get("section") or metadata.get("doc_type")).lower()
+                collection = self._one_line(item.get("collection")).lower()
+                extracted_tasks = self._extract_task_lines(item.get("text"))
+                if "task" in section and "occupation title" not in section:
+                    task_texts.extend(extracted_tasks)
+                elif collection == "onet_full_occupations":
+                    fallback_task_texts.extend(extracted_tasks)
 
         occupation_title = first_title or (max(title_counts, key=title_counts.get) if title_counts else None)
         soc_code = first_soc or (max(soc_counts, key=soc_counts.get) if soc_counts else None)
         return {
             "occupation_title": occupation_title,
             "soc_code": soc_code,
-            "task_texts": self._dedupe_queries(task_texts)[:12],
+            "task_texts": self._dedupe_queries(task_texts or fallback_task_texts)[:12],
         }
 
     def _extract_task_lines(self, text: Any) -> list[str]:
@@ -778,6 +902,1002 @@ class CareerRAGGenerator:
                 continue
             lines.append(task)
         return lines
+
+    def retrieve_ai_impact_evidence_pack(
+        self,
+        user_question: str,
+        onet_evidence: list[dict[str, Any]],
+        top_k: int = DEFAULT_RESEARCH_TOP_K,
+    ) -> AIImpactEvidencePack:
+        """Retrieve, normalize, and deduplicate all AI-impact evidence roles."""
+        occupation_context = self._infer_occupation_context(onet_evidence)
+        queries = self._build_ai_impact_search_queries(
+            user_question=user_question,
+            onet_evidence=onet_evidence,
+            occupation_context=occupation_context,
+        )
+
+        ai_rows: list[dict[str, Any]] = []
+        inference_rows: list[dict[str, Any]] = []
+        research_claims: list[dict[str, Any]] = []
+        ai_query_k = max(4, min(top_k, 8))
+        inference_query_k = max(2, min(DEFAULT_RESEARCH_INFERENCE_TOP_K, 4))
+        research_query_k = max(3, min(top_k, 6))
+
+        for query in queries:
+            try:
+                ai_rows.extend(
+                    retrieve_ai_impact(
+                        query,
+                        soc_code=occupation_context.get("soc_code"),
+                        occupation_title=occupation_context.get("occupation_title"),
+                        task_texts=occupation_context.get("task_texts") or [],
+                        top_k=ai_query_k,
+                    )
+                )
+            except Exception:
+                pass
+
+            try:
+                inference_rows.extend(
+                    retrieve_research_inference(
+                        query,
+                        top_k=inference_query_k,
+                    )
+                )
+            except Exception:
+                pass
+
+            try:
+                research_claims.extend(
+                    retrieve_research_claims(
+                        query,
+                        top_k=research_query_k,
+                    )
+                )
+            except Exception:
+                pass
+
+        ai_rows = self._dedupe_ai_result_rows(ai_rows, limit=max(top_k * 3, 18))
+        inference_rows = self._dedupe_ai_result_rows(
+            inference_rows,
+            limit=max(DEFAULT_RESEARCH_INFERENCE_TOP_K * 3, 8),
+        )
+        research_claims = self._dedupe_research_claim_rows(
+            research_claims,
+            limit=max(top_k * 2, 12),
+        )
+
+        chunks: list[EvidenceChunk] = []
+        chunks.extend(
+            self._chunk_from_onet_evidence(item)
+            for item in onet_evidence[: max(top_k, 8)]
+        )
+        chunks.extend(self._chunk_from_ai_result(item) for item in ai_rows)
+        chunks.extend(
+            self._chunk_from_research_inference(item) for item in inference_rows
+        )
+        chunks.extend(self._chunk_from_research_claim(item) for item in research_claims)
+        chunks = self._dedupe_evidence_chunks(chunks, max_total=40)
+
+        task_exposures = self._build_task_ai_exposures(
+            occupation_context=occupation_context,
+            ai_rows=ai_rows,
+            chunks=chunks,
+        )
+
+        return AIImpactEvidencePack(
+            occupation_context=occupation_context,
+            search_queries=queries,
+            chunks=chunks,
+            task_exposures=task_exposures,
+            ai_impact_evidence=ai_rows,
+            research_inference=inference_rows,
+            research_claims=research_claims,
+        )
+
+    def _build_ai_impact_search_queries(
+        self,
+        user_question: str,
+        onet_evidence: list[dict[str, Any]],
+        occupation_context: dict[str, Any],
+    ) -> list[str]:
+        """Create occupation-, task-, and AI-concept-aware retrieval queries."""
+        occupation_title = self._one_line(occupation_context.get("occupation_title"))
+        soc_code = self._one_line(occupation_context.get("soc_code"))
+        tasks = occupation_context.get("task_texts") or []
+        section_terms: list[str] = []
+        related_titles: list[str] = []
+
+        for item in onet_evidence[:10]:
+            metadata = item.get("metadata") or {}
+            section = self._one_line(metadata.get("section") or metadata.get("doc_type"))
+            if section:
+                section_terms.append(section)
+            for key in (
+                "related_occupation_title",
+                "related_title",
+                "alternate_title",
+                "occupation_title",
+            ):
+                value = self._one_line(metadata.get(key))
+                if value:
+                    related_titles.append(value)
+
+        base_title = occupation_title or user_question
+        queries = [
+            user_question,
+            self._build_expanded_research_query(user_question, onet_evidence),
+            f"AI impact on {base_title}",
+            f"generative AI automation augmentation exposure for {base_title}",
+            f"AI task transformation skills and work activities for {base_title}",
+            f"labor market AI exposure {base_title} {soc_code}".strip(),
+        ]
+        if related_titles:
+            queries.append(
+                "AI impact on related occupation titles: "
+                + "; ".join(self._dedupe_queries(related_titles)[:5])
+            )
+        if section_terms:
+            queries.append(
+                f"{base_title} AI exposure using O*NET sections "
+                + "; ".join(self._dedupe_queries(section_terms)[:6])
+            )
+        for task in tasks[:6]:
+            queries.append(f"{base_title} AI exposure for task: {task}")
+
+        return self._dedupe_queries(queries)[:14]
+
+    def _dedupe_ai_result_rows(
+        self,
+        rows: list[dict[str, Any]],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Deduplicate Chroma-style rows by document and normalized claim fields."""
+        best_by_key: dict[tuple[str, ...], dict[str, Any]] = {}
+        for row in rows:
+            metadata = row.get("metadata") or {}
+            key = (
+                self._normal_text_key(row.get("collection")),
+                self._normal_text_key(row.get("id") or row.get("doc_id")),
+            )
+            if not key[1]:
+                key = (
+                    self._normal_text_key(metadata.get("source_id")),
+                    self._normal_text_key(metadata.get("source_file") or metadata.get("source_release")),
+                    self._normal_text_key(metadata.get("soc_code")),
+                    self._normal_text_key(metadata.get("task_text")),
+                    self._normal_text_key(metadata.get("impact_type")),
+                    self._normal_text_key(metadata.get("metric_name")),
+                    self._normal_text_key(metadata.get("metric_value")),
+                )
+            current = best_by_key.get(key)
+            if current is None or self._row_score(row) > self._row_score(current):
+                best_by_key[key] = row
+
+        ranked = list(best_by_key.values())
+        ranked.sort(key=self._row_score, reverse=True)
+        return ranked[:limit]
+
+    def _dedupe_research_claim_rows(
+        self,
+        rows: list[dict[str, Any]],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Deduplicate research claims by claim id and source/page/text."""
+        best_by_key: dict[tuple[str, ...], dict[str, Any]] = {}
+        for row in rows:
+            key = (
+                self._normal_text_key(row.get("collection") or RESEARCH_COLLECTION_NAME),
+                self._normal_text_key(row.get("claim_id") or row.get("id")),
+            )
+            if not key[1]:
+                key = (
+                    self._normal_text_key(row.get("source_id") or row.get("title")),
+                    self._normal_text_key(row.get("page_start")),
+                    self._normal_text_key(row.get("claim_text"))[:120],
+                )
+            current = best_by_key.get(key)
+            if current is None or self._row_score(row) > self._row_score(current):
+                best_by_key[key] = row
+
+        ranked = list(best_by_key.values())
+        ranked.sort(key=self._row_score, reverse=True)
+        return ranked[:limit]
+
+    def _chunk_from_onet_evidence(self, item: dict[str, Any]) -> EvidenceChunk:
+        """Normalize an O*NET result into the unified source shape."""
+        metadata = item.get("metadata") or {}
+        occupation_title = self._one_line(metadata.get("occupation_title"))
+        return EvidenceChunk(
+            collection=self._one_line(item.get("collection")) or "onet",
+            source_type="onet",
+            source_name="O*NET",
+            title="O*NET Online",
+            url="https://www.onetonline.org/",
+            section=self._one_line(metadata.get("section") or metadata.get("doc_type")),
+            occupation_title=occupation_title,
+            soc_code=self._one_line(metadata.get("onet_soc_code") or metadata.get("soc_code")),
+            task_text="",
+            score=float(item.get("score") or 0.0),
+            doc_id=self._one_line(item.get("id")),
+            text=self._one_line(item.get("text")),
+            role="occupation_grounding",
+            source_id="onet",
+            metadata=dict(metadata),
+        )
+
+    def _chunk_from_ai_result(self, item: dict[str, Any]) -> EvidenceChunk:
+        """Normalize a structured AI-impact result into the unified source shape."""
+        metadata = item.get("metadata") or {}
+        source_id = self._one_line(metadata.get("source_id"))
+        doc_type = self._one_line(metadata.get("doc_type"))
+        source_type = self._source_type_for_ai_metadata(metadata)
+        role = "structured_ai_metric"
+        if source_id == "anthropic_economic_index" and metadata.get("task_text"):
+            role = "direct_anthropic_task_evidence"
+        elif source_id == "nber_w31222":
+            role = "nber_structured_evidence"
+        elif doc_type in {"ai_methodology", "ai_core_supplemental_exposure"}:
+            role = "methodology"
+
+        metric_name = self._one_line(metadata.get("metric_name"))
+        metric_value = self._one_line(metadata.get("metric_value"))
+        metric_text = ""
+        if metric_name or metric_value:
+            metric_text = f" Metric: {metric_name} = {metric_value} {self._metric_unit_for_display(metadata)}."
+
+        return EvidenceChunk(
+            collection=self._one_line(item.get("collection")) or AI_IMPACT_COLLECTION_NAME,
+            source_type=source_type,
+            source_name=self._one_line(metadata.get("source_name") or source_id),
+            title=self._one_line(metadata.get("source_file") or metadata.get("source_release") or metadata.get("source_name")),
+            url=self._one_line(metadata.get("source_url") or metadata.get("url") or metadata.get("final_url")),
+            page=self._one_line(metadata.get("source_page") or metadata.get("page")),
+            section=doc_type,
+            occupation_title=self._one_line(metadata.get("occupation_title")),
+            soc_code=self._one_line(metadata.get("soc_code")),
+            task_text=self._one_line(metadata.get("task_text")),
+            score=float(item.get("reranked_score") or item.get("score") or 0.0),
+            doc_id=self._one_line(item.get("doc_id") or item.get("id")),
+            text=(self._one_line(item.get("text")) + metric_text).strip(),
+            role=role,
+            source_id=source_id,
+            metadata=dict(metadata),
+        )
+
+    def _chunk_from_research_inference(self, item: dict[str, Any]) -> EvidenceChunk:
+        """Normalize a qualitative research inference chunk."""
+        metadata = item.get("metadata") or {}
+        return EvidenceChunk(
+            collection=self._one_line(item.get("collection")) or RESEARCH_INFERENCE_COLLECTION_NAME,
+            source_type="research_inference",
+            source_name=self._one_line(metadata.get("source_name") or metadata.get("source_id")),
+            title=self._one_line(metadata.get("source_name") or metadata.get("source_file")),
+            url=self._one_line(metadata.get("source_url") or metadata.get("url") or metadata.get("final_url")),
+            page=self._one_line(metadata.get("source_page") or metadata.get("page")),
+            section=self._one_line(metadata.get("allowed_usage") or metadata.get("doc_type")),
+            occupation_title=self._one_line(metadata.get("occupation_title")),
+            soc_code=self._one_line(metadata.get("soc_code")),
+            task_text=self._one_line(metadata.get("task_text")),
+            score=float(item.get("score") or 0.0),
+            doc_id=self._one_line(item.get("doc_id") or item.get("id")),
+            text=self._one_line(item.get("text")),
+            role="qualitative_methodology_or_caveat",
+            source_id=self._one_line(metadata.get("source_id")),
+            metadata=dict(metadata),
+        )
+
+    def _chunk_from_research_claim(self, claim: dict[str, Any]) -> EvidenceChunk:
+        """Normalize an uploaded research-claim result."""
+        text_parts = [
+            self._one_line(claim.get("claim_text")),
+            self._one_line(claim.get("evidence_quote")),
+        ]
+        return EvidenceChunk(
+            collection=self._one_line(claim.get("collection")) or RESEARCH_COLLECTION_NAME,
+            source_type="uploaded_research_claim",
+            source_name=self._one_line(claim.get("title") or claim.get("source_id")),
+            title=self._one_line(claim.get("title")),
+            authors=self._clean_authors_for_citation(claim.get("authors")),
+            year=self._one_line(claim.get("year")),
+            url=self._one_line(claim.get("final_url") or claim.get("url")),
+            page=self._page_range(claim),
+            section=self._one_line(claim.get("impact_type_clean") or claim.get("generator_use_scope")),
+            occupation_title=self._one_line(claim.get("affected_entity_text")),
+            soc_code="",
+            task_text="",
+            score=float(claim.get("score") or 0.0),
+            doc_id=self._one_line(claim.get("claim_id") or claim.get("id")),
+            text=". ".join(part for part in text_parts if part),
+            role="uploaded_research_claim",
+            source_id=self._one_line(claim.get("source_id")),
+            metadata=dict(claim),
+        )
+
+    def _dedupe_evidence_chunks(
+        self,
+        chunks: list[EvidenceChunk],
+        max_total: int,
+    ) -> list[EvidenceChunk]:
+        """Deduplicate normalized chunks and keep a source-diverse set."""
+        best_by_key: dict[tuple[str, ...], EvidenceChunk] = {}
+        for chunk in chunks:
+            text_key = self._normal_text_key(chunk.text)
+            text_hash = hashlib.sha1(text_key[:500].encode("utf-8")).hexdigest()[:12]
+            key = (
+                self._normal_text_key(chunk.collection),
+                self._normal_text_key(chunk.doc_id),
+            )
+            if not key[1]:
+                key = (
+                    self._normal_text_key(chunk.source_id or chunk.source_name),
+                    self._normal_text_key(chunk.title),
+                    self._normal_text_key(chunk.page),
+                    self._normal_text_key(chunk.section),
+                    self._normal_text_key(chunk.occupation_title),
+                    self._normal_text_key(chunk.task_text),
+                    text_hash,
+                )
+            current = best_by_key.get(key)
+            if current is None or chunk.score > current.score:
+                best_by_key[key] = chunk
+
+        role_priority = {
+            "occupation_grounding": 5,
+            "direct_anthropic_task_evidence": 4,
+            "structured_ai_metric": 3,
+            "uploaded_research_claim": 2,
+            "qualitative_methodology_or_caveat": 1,
+        }
+        ranked = list(best_by_key.values())
+        ranked.sort(
+            key=lambda chunk: (
+                role_priority.get(chunk.role, 0),
+                chunk.score,
+            ),
+            reverse=True,
+        )
+
+        selected: list[EvidenceChunk] = []
+        source_counts: dict[str, int] = {}
+        for chunk in ranked:
+            source_key = self._normal_text_key(
+                chunk.source_id or chunk.source_name or chunk.collection
+            )
+            max_per_source = 8 if chunk.source_type in {"onet", "structured_ai_dataset"} else 5
+            if source_counts.get(source_key, 0) >= max_per_source:
+                continue
+            selected.append(chunk)
+            source_counts[source_key] = source_counts.get(source_key, 0) + 1
+            if len(selected) >= max_total:
+                break
+        return selected
+
+    def _build_task_ai_exposures(
+        self,
+        occupation_context: dict[str, Any],
+        ai_rows: list[dict[str, Any]],
+        chunks: list[EvidenceChunk],
+    ) -> list[TaskAIExposure]:
+        """Build conservative task-level AI exposure interpretations."""
+        tasks = list(occupation_context.get("task_texts") or [])
+        if not tasks:
+            for row in ai_rows:
+                task = self._one_line((row.get("metadata") or {}).get("task_text"))
+                if task:
+                    tasks.append(task)
+        tasks = self._dedupe_queries(tasks)[:7]
+
+        exposures: list[TaskAIExposure] = []
+        for task in tasks:
+            direct_rows = self._matching_anthropic_task_rows(
+                task=task,
+                ai_rows=ai_rows,
+                occupation_context=occupation_context,
+            )
+            direct_text = self._direct_anthropic_evidence_label(direct_rows)
+            applicability, confidence, reason = self._infer_task_ai_applicability(
+                task=task,
+                direct_rows=direct_rows,
+                chunks=chunks,
+            )
+            exposures.append(
+                TaskAIExposure(
+                    task_text=task,
+                    direct_anthropic_evidence=direct_text,
+                    inferred_applicability=applicability,
+                    confidence=confidence,
+                    main_reason=reason,
+                    source_refs=self._supporting_source_refs(task, chunks),
+                )
+            )
+
+        return exposures
+
+    def _matching_anthropic_task_rows(
+        self,
+        task: str,
+        ai_rows: list[dict[str, Any]],
+        occupation_context: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Find Anthropic rows that map to the exact or near O*NET task."""
+        expected_soc = self._normal_text_key(occupation_context.get("soc_code"))
+        expected_title = self._normal_text_key(occupation_context.get("occupation_title"))
+        matches: list[dict[str, Any]] = []
+        for row in ai_rows:
+            metadata = row.get("metadata") or {}
+            if self._one_line(metadata.get("source_id")) != "anthropic_economic_index":
+                continue
+            row_task = self._one_line(metadata.get("task_text"))
+            if not row_task:
+                continue
+            actual_soc = self._normal_text_key(metadata.get("soc_code"))
+            actual_title = self._normal_text_key(metadata.get("occupation_title"))
+            soc_or_title_matches = (
+                bool(expected_soc and actual_soc == expected_soc)
+                or bool(expected_title and actual_title == expected_title)
+                or not (expected_soc or expected_title)
+            )
+            if not soc_or_title_matches:
+                continue
+            similarity = self._text_similarity(task, row_task)
+            if similarity >= 0.58:
+                row["_task_similarity"] = similarity
+                matches.append(row)
+        matches.sort(
+            key=lambda row: (
+                float(row.get("_task_similarity") or 0.0),
+                self._row_score(row),
+            ),
+            reverse=True,
+        )
+        return matches[:4]
+
+    def _direct_anthropic_evidence_label(
+        self,
+        direct_rows: list[dict[str, Any]],
+    ) -> str:
+        """Describe direct Anthropic evidence without treating zeros as no impact."""
+        positive_rows = [
+            row for row in direct_rows if self._metric_value_float(row.get("metadata") or {}) > 0
+        ]
+        if not positive_rows:
+            return "No direct observed/mapped Anthropic evidence for this exact O*NET task."
+
+        row = positive_rows[0]
+        metadata = row.get("metadata") or {}
+        metric_name = self._one_line(metadata.get("metric_name")) or "metric"
+        metric_value = self._one_line(metadata.get("metric_value"))
+        metric_unit = self._metric_unit_for_display(metadata)
+        impact_type = self._one_line(metadata.get("impact_type"))
+        source_scope = self._one_line(metadata.get("doc_type")) or "retrieved row"
+        return (
+            f"Direct Anthropic {impact_type or 'AI'} evidence: "
+            f"{metric_name} = {metric_value} {metric_unit} ({source_scope})."
+        ).strip()
+
+    def _infer_task_ai_applicability(
+        self,
+        task: str,
+        direct_rows: list[dict[str, Any]],
+        chunks: list[EvidenceChunk],
+    ) -> tuple[str, str, str]:
+        """Infer semantic AI applicability from task text and qualitative evidence."""
+        task_lower = task.lower()
+        information_terms = {
+            "analyze",
+            "analysis",
+            "assess",
+            "calculate",
+            "compare",
+            "data",
+            "database",
+            "design",
+            "document",
+            "draft",
+            "estimate",
+            "evaluate",
+            "forecast",
+            "mathematical",
+            "model",
+            "monitor",
+            "numerical",
+            "plan",
+            "problem",
+            "prepare",
+            "program",
+            "report",
+            "research",
+            "review",
+            "software",
+            "statistical",
+            "study",
+            "summarize",
+            "technique",
+            "theories",
+            "write",
+        }
+        compliance_terms = {
+            "compliance",
+            "permit",
+            "policy",
+            "regulation",
+            "regulatory",
+            "risk",
+            "standards",
+        }
+        physical_terms = {
+            "backfill",
+            "clean",
+            "compact",
+            "construction",
+            "equipment",
+            "hazard",
+            "inspect",
+            "inspection",
+            "install",
+            "maintain",
+            "operate",
+            "picks",
+            "repair",
+            "shovels",
+            "sample",
+            "site",
+            "supervise",
+            "test",
+            "traffic",
+            "trenches",
+        }
+        score = 0
+        score += sum(1 for term in information_terms if term in task_lower)
+        score += sum(1 for term in compliance_terms if term in task_lower)
+        score -= min(sum(1 for term in physical_terms if term in task_lower), 2)
+        if any(self._metric_value_float(row.get("metadata") or {}) > 0 for row in direct_rows):
+            score += 3
+        if self._has_qualitative_research_support(task, chunks):
+            score += 1
+
+        if score >= 5:
+            applicability = "High"
+        elif score >= 3:
+            applicability = "Medium"
+        elif score >= 1:
+            applicability = "Low-Medium"
+        else:
+            applicability = "Low"
+
+        if any(self._metric_value_float(row.get("metadata") or {}) > 0 for row in direct_rows):
+            confidence = "Direct Anthropic signal plus task inference"
+        else:
+            confidence = "Inferred from task language and qualitative research context"
+
+        return applicability, confidence, self._task_ai_reason(task_lower, applicability)
+
+    def _task_ai_reason(self, task_lower: str, applicability: str) -> str:
+        """Return a concise, non-numeric reason for the task exposure table."""
+        if any(term in task_lower for term in ("monitor", "inspect", "inspection", "field research", "field inspection", "site", "sample", "test", "equipment", "traffic", "ditch", "trench", "concrete", "pipes", "shovel", "rake", "machinery")):
+            return "AI may support planning, monitoring data, and documentation, but site conditions, safety, and hands-on execution remain human-led."
+        if any(term in task_lower for term in ("data", "analysis", "model", "statistical", "forecast", "calculate", "mathematical", "computational", "numerical", "theories", "techniques")):
+            return "AI can assist with analysis, modeling, pattern finding, and drafting, but domain validation remains human-led."
+        if any(term in task_lower for term in ("report", "document", "draft", "write", "prepare", "review", "summarize")):
+            return "AI can assist with document review, summarization, and first drafts, while humans remain accountable for final judgment."
+        if any(term in task_lower for term in ("compliance", "permit", "regulation", "policy", "standards", "risk")):
+            return "AI can help compare rules, flag risks, and draft compliance materials, but legal and professional accountability stays human."
+        if applicability in {"High", "Medium"}:
+            return "The task has repeatable information-processing components that current AI systems can assist with."
+        return "The task appears more context-specific or hands-on, so AI support is more likely to be indirect."
+
+    def _has_qualitative_research_support(
+        self,
+        task: str,
+        chunks: list[EvidenceChunk],
+    ) -> bool:
+        """Return True when qualitative research chunks overlap with the task."""
+        task_key = self._normal_text_key(task)
+        if not task_key:
+            return False
+        task_tokens = set(task_key.split())
+        for chunk in chunks:
+            if chunk.source_type not in {"uploaded_research_claim", "research_inference"}:
+                continue
+            chunk_tokens = set(self._normal_text_key(chunk.text).split())
+            if len(task_tokens & chunk_tokens) >= 2:
+                return True
+        return False
+
+    def _supporting_source_refs(
+        self,
+        task: str,
+        chunks: list[EvidenceChunk],
+    ) -> list[str]:
+        """Pick compact source references for a task exposure row."""
+        refs: list[str] = []
+        for chunk in chunks:
+            if chunk.source_id == "nber_w31222":
+                continue
+            similarity = self._text_similarity(task, chunk.task_text or chunk.text)
+            if chunk.source_type == "onet" or similarity >= 0.12:
+                label = chunk.source_name or chunk.title or chunk.collection
+                if label and label not in refs:
+                    refs.append(label)
+            if len(refs) >= 3:
+                break
+        return refs
+
+    def _build_structured_ai_impact_answer(
+        self,
+        user_question: str,
+        onet_evidence: list[dict[str, Any]],
+        pack: AIImpactEvidencePack,
+    ) -> str:
+        """Build a grounded AI-impact answer with enforceable cautious wording."""
+        del user_question
+        occupation_context = pack.occupation_context
+        occupation_title = self._one_line(occupation_context.get("occupation_title")) or "this occupation"
+        soc_code = self._one_line(occupation_context.get("soc_code"))
+        description = self._first_occupation_description(onet_evidence)
+        tasks = list(occupation_context.get("task_texts") or [])
+
+        parts = [
+            "Short Career Explanation",
+            description
+            or f"{occupation_title} work on the tasks and responsibilities described in the retrieved O*NET evidence.",
+        ]
+        if soc_code:
+            parts[-1] = f"{parts[-1]} O*NET SOC: {soc_code}."
+
+        parts.extend(["", "Main Tasks"])
+        if tasks:
+            parts.extend(f"- {task}" for task in tasks[:6])
+        else:
+            parts.append("- I found O*NET occupation evidence, but not a clean task list in the retrieved chunks.")
+
+        parts.extend(
+            [
+                "",
+                "AI Exposure By Task",
+                "| Task | Direct Anthropic Evidence | Inferred AI Applicability | Confidence | Main Reason |",
+                "| --- | --- | --- | --- | --- |",
+            ]
+        )
+        if pack.task_exposures:
+            for exposure in pack.task_exposures:
+                parts.append(
+                    "| "
+                    + " | ".join(
+                        [
+                            self._markdown_cell(exposure.task_text),
+                            self._markdown_cell(exposure.direct_anthropic_evidence),
+                            self._markdown_cell(exposure.inferred_applicability),
+                            self._markdown_cell(exposure.confidence),
+                            self._markdown_cell(exposure.main_reason),
+                        ]
+                    )
+                    + " |"
+                )
+        else:
+            parts.append(
+                "| Occupation-level work | No direct observed/mapped Anthropic evidence for this exact O*NET task. | Low-Medium | Inferred from available O*NET and research evidence | Retrieved task evidence was not specific enough for a task-level table. |"
+            )
+
+        parts.extend(
+            [
+                "",
+                "AI Impact Synthesis",
+                self._ai_impact_synthesis(pack),
+                "",
+                "Where AI May Help Most",
+            ]
+        )
+        parts.extend(self._where_ai_may_help_lines(pack))
+        parts.extend(["", "Where Human Expertise Remains Important"])
+        parts.extend(self._where_human_expertise_lines(pack))
+        parts.extend(["", "Sources Used"])
+        parts.extend(self._format_answer_sources(pack, onet_evidence))
+        return "\n".join(parts)
+
+    def _ai_impact_synthesis(self, pack: AIImpactEvidencePack) -> str:
+        """Summarize the evidence pack without overclaiming."""
+        positive_direct = sum(
+            1
+            for exposure in pack.task_exposures
+            if exposure.direct_anthropic_evidence.startswith("Direct Anthropic")
+        )
+        no_direct = sum(
+            1
+            for exposure in pack.task_exposures
+            if exposure.direct_anthropic_evidence.startswith("No direct")
+        )
+        pieces = [
+            "The safest reading is task transformation and augmentation, not a claim that the occupation is disappearing.",
+            "The Anthropic column reports only direct observed or mapped evidence from the indexed dataset.",
+        ]
+        if positive_direct:
+            pieces.append(
+                f"{positive_direct} retrieved task row(s) had a positive direct Anthropic signal."
+            )
+        if no_direct:
+            pieces.append(
+                "'No direct observed/mapped Anthropic evidence' means the retrieved Anthropic data did not map an observed signal to that exact O*NET task; it does not mean zero AI impact."
+            )
+        if any(chunk.source_type in {"uploaded_research_claim", "research_inference"} for chunk in pack.chunks):
+            pieces.append(
+                "Uploaded research and research-inference chunks are used qualitatively for scope, caveats, and likely task mechanisms, not for new numeric AI-impact claims."
+            )
+        return " ".join(pieces)
+
+    def _where_ai_may_help_lines(self, pack: AIImpactEvidencePack) -> list[str]:
+        """Return task-focused lines for the highest-applicability rows."""
+        prioritized = [
+            exposure
+            for exposure in pack.task_exposures
+            if exposure.inferred_applicability in {"High", "Medium"}
+        ]
+        if not prioritized:
+            prioritized = pack.task_exposures[:3]
+        lines: list[str] = []
+        for exposure in prioritized[:4]:
+            lines.append(
+                f"- {self._truncate(exposure.task_text, 110)}: {exposure.main_reason}"
+            )
+        return lines or ["- The retrieved task evidence did not identify a strong task-specific AI assistance area."]
+
+    def _where_human_expertise_lines(self, pack: AIImpactEvidencePack) -> list[str]:
+        """Return conservative lines for human-led parts of the work."""
+        lower_priority = [
+            exposure
+            for exposure in pack.task_exposures
+            if exposure.inferred_applicability in {"Low", "Low-Medium"}
+        ]
+        lines: list[str] = []
+        for exposure in lower_priority[:3]:
+            lines.append(
+                f"- {self._truncate(exposure.task_text, 110)}: human oversight matters because the task is context-specific, accountable, or hands-on."
+            )
+        if not lines:
+            lines.append(
+                "- Final decisions, professional accountability, stakeholder communication, and safety-sensitive judgments remain human-led."
+            )
+        return lines
+
+    def _format_answer_sources(
+        self,
+        pack: AIImpactEvidencePack,
+        onet_evidence: list[dict[str, Any]],
+    ) -> list[str]:
+        """Format only sources actually used by the deterministic AI answer."""
+        del onet_evidence
+        selected: list[EvidenceChunk] = []
+        seen: set[str] = set()
+        source_lines: list[str] = []
+        source_plan = [
+            ("structured_ai_dataset", 2),
+            ("uploaded_research_claim", 2),
+            ("research_inference", 1),
+        ]
+
+        if any(chunk.source_type == "onet" for chunk in pack.chunks):
+            source_lines.append("- O*NET Online. https://www.onetonline.org/")
+
+        def add_chunk(chunk: EvidenceChunk) -> None:
+            if chunk.source_id == "nber_w31222":
+                return
+            if chunk.source_type == "onet":
+                return
+            key = self._source_citation_key(chunk)
+            if not key or key in seen:
+                return
+            seen.add(key)
+            selected.append(chunk)
+
+        for source_type, limit in source_plan:
+            added = 0
+            for chunk in pack.chunks:
+                if chunk.source_type != source_type:
+                    continue
+                before = len(selected)
+                add_chunk(chunk)
+                if len(selected) > before:
+                    added += 1
+                if added >= limit:
+                    break
+
+        for chunk in pack.chunks:
+            if len(selected) >= 5:
+                break
+            add_chunk(chunk)
+
+        for chunk in selected[:5]:
+            citation = self._format_source_citation(chunk)
+            if chunk.source_type == "research_inference":
+                citation = f"{citation} [qualitative only]"
+            source_lines.append(f"- {citation}")
+
+        return source_lines or ["- O*NET Online. https://www.onetonline.org/"]
+
+    def _format_source_citation(self, chunk: EvidenceChunk) -> str:
+        """Format one source with paper-style citation metadata when available."""
+        if chunk.source_type == "onet":
+            return "O*NET Online. https://www.onetonline.org/"
+
+        if chunk.source_type == "structured_ai_dataset":
+            parts = [chunk.source_name or "Structured AI dataset"]
+            source_title = self._display_source_title(chunk.title)
+            if source_title and source_title != parts[0]:
+                parts.append(source_title)
+            if chunk.url:
+                parts.append(chunk.url)
+            return self._join_citation_parts(parts)
+
+        title = chunk.title or chunk.source_name or chunk.source_id or chunk.collection
+        parts = [title]
+        if chunk.authors:
+            parts.append(chunk.authors)
+        if chunk.year:
+            parts.append(chunk.year)
+        page = self._page_for_citation(chunk.page)
+        if page:
+            parts.append(page)
+        if chunk.url:
+            parts.append(chunk.url)
+        elif chunk.source_type == "research_inference" and chunk.metadata.get("source_url"):
+            parts.append(self._one_line(chunk.metadata.get("source_url")))
+        return self._join_citation_parts(parts)
+
+    def _source_citation_key(self, chunk: EvidenceChunk) -> str:
+        """Deduplicate sources by citation identity rather than retrieved chunk id."""
+        if chunk.source_type in {
+            "uploaded_research_claim",
+            "research_inference",
+            "structured_research_claim",
+            "research_methodology",
+        }:
+            return self._normal_text_key(
+                f"{chunk.source_type} {chunk.title or chunk.source_name} "
+                f"{chunk.authors} {chunk.year} {chunk.url or chunk.source_id}"
+            )
+        return self._normal_text_key(
+            f"{chunk.source_type} {chunk.source_id} {chunk.source_name} "
+            f"{chunk.title} {chunk.section}"
+        )
+
+    @staticmethod
+    def _join_citation_parts(parts: list[str]) -> str:
+        """Join citation fragments with periods and preserve URL readability."""
+        cleaned = [CareerRAGGenerator._one_line(part).rstrip(".") for part in parts if CareerRAGGenerator._one_line(part)]
+        if not cleaned:
+            return "Unknown source."
+        citation = cleaned[0]
+        for part in cleaned[1:]:
+            separator = " " if citation.endswith(("?", "!")) else ". "
+            citation = f"{citation}{separator}{part}"
+        if cleaned[-1].startswith(("http://", "https://")) or citation.endswith((".", "?", "!")):
+            return citation
+        return f"{citation}."
+
+    @staticmethod
+    def _clean_authors_for_citation(value: Any) -> str:
+        """Keep author metadata citation-like and drop subtitles/abstract snippets."""
+        text = CareerRAGGenerator._one_line(value)
+        if not text:
+            return ""
+        segments = [segment.strip() for segment in text.split(";") if segment.strip()]
+        if len(segments) > 1:
+            first_lower = segments[0].lower()
+            if first_lower.startswith(("evidence from", "a review of", "working paper")):
+                segments = segments[1:]
+            else:
+                segments = [segments[0]]
+        cleaned = "; ".join(segments)
+        noisy = re.search(
+            r"\b(this paper|abstract|study|report|evaluates claims|implications)\b",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        if noisy and segments:
+            cleaned = segments[0]
+        if len(cleaned.split()) > 18:
+            cleaned = ""
+        return cleaned
+
+    @staticmethod
+    def _page_for_citation(page: str) -> str:
+        """Format page metadata for citation text."""
+        cleaned = CareerRAGGenerator._one_line(page)
+        if not cleaned or cleaned == "N/A":
+            return ""
+        if "-" in cleaned:
+            return f"pp. {cleaned}"
+        return f"p. {cleaned}"
+
+    @staticmethod
+    def _display_source_title(title: str) -> str:
+        """Prefer readable source names over long local file paths."""
+        cleaned = CareerRAGGenerator._one_line(title)
+        if not cleaned:
+            return ""
+        if "\\" in cleaned or "/" in cleaned:
+            return Path(cleaned.replace("\\", "/")).name
+        return cleaned
+
+    def _build_evidence_pack_summary(
+        self,
+        chunks: list[EvidenceChunk],
+    ) -> list[dict[str, Any]]:
+        """Build the unified source table used by --show-sources."""
+        summaries: list[dict[str, Any]] = []
+        for chunk in chunks:
+            summaries.append(
+                {
+                    "collection": chunk.collection,
+                    "source_type": chunk.source_type,
+                    "source_name": chunk.source_name,
+                    "title": chunk.title,
+                    "authors": chunk.authors,
+                    "year": chunk.year,
+                    "url": chunk.url,
+                    "citation": self._format_source_citation(chunk),
+                    "page": chunk.page,
+                    "section": chunk.section,
+                    "occupation": chunk.occupation_title,
+                    "task": chunk.task_text,
+                    "score": chunk.score,
+                    "doc_id": chunk.doc_id,
+                    "role": chunk.role,
+                }
+            )
+        return summaries
+
+    @staticmethod
+    def _source_type_for_ai_metadata(metadata: dict[str, Any]) -> str:
+        """Classify structured AI-impact metadata into source table source_type."""
+        source_id = CareerRAGGenerator._one_line(metadata.get("source_id"))
+        doc_type = CareerRAGGenerator._one_line(metadata.get("doc_type"))
+        if source_id == "anthropic_economic_index":
+            return "structured_ai_dataset"
+        if source_id == "nber_w31222":
+            return "structured_research_claim"
+        if doc_type in {"ai_methodology", "ai_core_supplemental_exposure"}:
+            return "research_methodology"
+        return "structured_ai_evidence"
+
+    @staticmethod
+    def _row_score(row: dict[str, Any]) -> float:
+        """Return the best available score for a retrieved row."""
+        return float(row.get("reranked_score") or row.get("score") or 0.0)
+
+    @staticmethod
+    def _metric_value_float(metadata: dict[str, Any]) -> float:
+        """Parse a metric value, returning 0.0 when absent or unparsable."""
+        value = CareerRAGGenerator._one_line(metadata.get("metric_value"))
+        if not value:
+            return 0.0
+        try:
+            return float(value.replace(",", ""))
+        except ValueError:
+            return 0.0
+
+    @staticmethod
+    def _normal_text_key(value: Any) -> str:
+        """Normalize text for lightweight dedupe and matching."""
+        text = CareerRAGGenerator._one_line(value).lower()
+        return re.sub(r"[^a-z0-9]+", " ", text).strip()
+
+    @staticmethod
+    def _text_similarity(left: str, right: str) -> float:
+        """Compute simple token-overlap similarity."""
+        left_tokens = set(CareerRAGGenerator._normal_text_key(left).split())
+        right_tokens = set(CareerRAGGenerator._normal_text_key(right).split())
+        if not left_tokens or not right_tokens:
+            return 0.0
+        return len(left_tokens & right_tokens) / max(len(left_tokens | right_tokens), 1)
+
+    @staticmethod
+    def _markdown_cell(value: Any) -> str:
+        """Escape table cell delimiters and keep cells compact."""
+        text = CareerRAGGenerator._one_line(value)
+        return text.replace("|", "\\|")
 
     def _build_ai_answer_prompt(
         self,
@@ -797,10 +1917,11 @@ class CareerRAGGenerator:
                     "Use this structure with short headings:\n"
                     "1. Short career explanation\n"
                     "2. Main tasks\n"
-                    "3. AI exposure by task\n"
-                    "4. Inference\n"
-                    "5. Future outlook\n"
-                    "6. Sources\n\n"
+                    "3. AI exposure by task as a Markdown table\n"
+                    "4. AI impact synthesis\n"
+                    "5. Where AI may help most\n"
+                    "6. Where human expertise remains important\n"
+                    "7. Sources used\n\n"
                     "Rules:\n"
                     "- Use O*NET evidence for what the occupation does and its tasks.\n"
                     "- Use structured AI impact evidence for AI statistics.\n"
@@ -809,10 +1930,10 @@ class CareerRAGGenerator:
                     "- Research inference chunks are only for caveats or methodology, not numeric statistics.\n"
                     "- Do not fabricate values. Every numeric AI-impact value must appear in the structured AI evidence block.\n"
                     "- Do not convert share/score metrics into percentages unless metric_unit is percent.\n"
-                    "- A metric value of 0.0 share means 0.0 in the indexed Anthropic measure; do not call it no AI impact, no exposure, or no automation unless impact_type is explicitly no_exposure.\n"
-                    "- For 0.0 share rows, say '0.0 share in the indexed measure'; do not say 'no current AI penetration' or imply absence of AI impact.\n"
+                    "- A metric value of 0.0 share means the retrieved indexed dataset did not observe/map a direct signal for that exact task; do not call it no AI impact, no exposure, or no automation unless impact_type is explicitly no_exposure.\n"
+                    "- In the task table, write 'No direct observed/mapped Anthropic evidence for this exact O*NET task' instead of showing raw 0.0 share rows.\n"
                     "- Do not say exposure means replacement, disappearance, layoffs, or safety from AI.\n"
-                    "- In Future outlook, discuss task change and skill adaptation only. Do not forecast demand, hiring, employment, openings, growth, or decline unless retrieved evidence explicitly says so.\n"
+                    "- Discuss task change and skill adaptation only. Do not forecast demand, hiring, employment, openings, growth, or decline unless retrieved evidence explicitly says so.\n"
                     "- Only list NBER W31222 in Sources if the answer uses a specific NBER structured claim or NBER method distinction.\n"
                     "- In Sources, list only sources that support claims actually used in the answer.\n"
                     "- Never use research inference chunks for numeric AI-impact claims; those chunks are only caveats/methodology.\n"
@@ -855,23 +1976,35 @@ class CareerRAGGenerator:
             parts.append("- I found O*NET occupation evidence, but not a clean task list in the retrieved chunks.")
 
         if ai_impact_needed:
-            parts.extend(["", "AI exposure by task"])
+            parts.extend(
+                [
+                    "",
+                    "AI exposure by task",
+                    "| Task | Direct Anthropic Evidence | Inferred AI Applicability | Confidence | Main Reason |",
+                    "| --- | --- | --- | --- | --- |",
+                ]
+            )
             metric_lines = self._fallback_ai_metric_lines(ai_impact_evidence)
             if metric_lines:
                 parts.extend(metric_lines[:5])
             else:
-                parts.append("- I did not find an indexed task-level AI exposure statistic for this specific task.")
+                parts.append(
+                    "| Occupation-level work | No direct observed/mapped Anthropic evidence for this exact O*NET task. | Low-Medium | Inferred from available evidence | I did not find a direct indexed Anthropic task match. |"
+                )
 
             parts.extend(
                 [
                     "",
-                    "Inference",
+                    "AI impact synthesis",
                     "The retrieved evidence should be read as exposure or observed usage, not as proof that the occupation will be replaced. Coding, modeling, drafting, and repeatable information-processing tasks are usually the parts to inspect first; judgment-heavy communication and accountable decisions need more caution.",
                     "",
-                    "Future outlook",
-                    "Expect task change rather than a simple job-disappearance conclusion. The safest reading is that AI may augment or automate parts of the work depending on the specific task and metric scope.",
+                    "Where AI may help most",
+                    "- Repeatable information processing, drafting, review, and analysis tasks are the most plausible assistance areas when supported by retrieved evidence.",
                     "",
-                    "Sources",
+                    "Where human expertise remains important",
+                    "- Final decisions, professional accountability, stakeholder communication, and safety-sensitive judgments remain human-led.",
+                    "",
+                    "Sources used",
                 ]
             )
             source_names = self._fallback_source_names(ai_impact_evidence, research_inference)
@@ -919,15 +2052,51 @@ class CareerRAGGenerator:
             metric_unit = self._metric_unit_for_display(metadata)
             impact_type = self._one_line(metadata.get("impact_type"))
             if metric_name and metric_value:
-                caution = ""
                 if self._metric_caution(metadata).startswith("0.0 share"):
-                    caution = " This is not by itself evidence of no AI impact."
-                lines.append(
-                    f"- For {task}, {source} reports {impact_type} metric {metric_name} = {metric_value} {metric_unit}.{caution}".rstrip()
-                )
+                    lines.append(
+                        "| "
+                        + " | ".join(
+                            [
+                                self._markdown_cell(task),
+                                "No direct observed/mapped Anthropic evidence for this exact O*NET task.",
+                                "Low-Medium",
+                                "Inferred from available evidence",
+                                "The zero-valued retrieved metric is not interpreted as zero AI impact.",
+                            ]
+                        )
+                        + " |"
+                    )
+                else:
+                    lines.append(
+                        "| "
+                        + " | ".join(
+                            [
+                                self._markdown_cell(task),
+                                self._markdown_cell(
+                                    f"{source} reports {impact_type} metric {metric_name} = {metric_value} {metric_unit}."
+                                ),
+                                "Medium",
+                                "Direct metric plus inference",
+                                "Use the metric only within its source scope.",
+                            ]
+                        )
+                        + " |"
+                    )
             elif source:
                 lines.append(
-                    f"- {source} provides {impact_type or 'methodology'} evidence for {task}, but no specific numeric value is available in this row."
+                    "| "
+                    + " | ".join(
+                        [
+                            self._markdown_cell(task),
+                            self._markdown_cell(
+                                f"{source} provides {impact_type or 'methodology'} evidence, but no specific numeric value is available in this row."
+                            ),
+                            "Low-Medium",
+                            "Inferred from available evidence",
+                            "No direct numeric task metric was available.",
+                        ]
+                    )
+                    + " |"
                 )
         return lines
 
@@ -960,23 +2129,31 @@ class CareerRAGGenerator:
         replacements = [
             (
                 r"\bno current AI penetration\b",
-                "0.0 share in the indexed measure",
+                "no direct observed/mapped Anthropic evidence for this exact O*NET task",
             ),
             (
                 r"\bno observed AI penetration\b",
-                "0.0 share in the indexed measure",
+                "no direct observed/mapped Anthropic evidence for this exact O*NET task",
             ),
             (
                 r"\bno significant AI penetration\b",
-                "low or zero indexed penetration in the retrieved measure",
+                "no direct observed/mapped Anthropic evidence in the retrieved task row",
             ),
             (
                 r"\bno current AI exposure\b",
-                "0.0 share in the indexed exposure measure",
+                "no direct observed/mapped Anthropic evidence for this exact O*NET task",
             ),
             (
                 r"\bnot currently exposed to AI\b",
-                "reported as 0.0 share in the indexed measure",
+                "not directly observed or mapped in the retrieved Anthropic task evidence",
+            ),
+            (
+                r"\b0\.0 share in the indexed measure\b",
+                "no direct observed/mapped Anthropic evidence for this exact O*NET task",
+            ),
+            (
+                r"\b0\.0 share in the indexed exposure measure\b",
+                "no direct observed/mapped Anthropic evidence for this exact O*NET task",
             ),
         ]
         guarded = answer
@@ -995,8 +2172,10 @@ class CareerRAGGenerator:
             "maintasks",
             "aiexposurebytask",
             "inference",
+            "aiimpactsynthesis",
             "futureoutlook",
             "sources",
+            "sourcesused",
         }
         labor_terms = re.compile(
             r"\b(demand|employment|job openings|openings|hiring|jobs?)\b",
@@ -1197,23 +2376,19 @@ class CareerRAGGenerator:
         research_inference: list[dict[str, Any]] = []
         research_inference_context = "No research inference evidence was requested."
         expanded_research_query = ""
+        ai_evidence_pack: AIImpactEvidencePack | None = None
 
         if ai_impact_needed:
-            ai_impact_evidence = self.retrieve_structured_ai_evidence(
+            ai_evidence_pack = self.retrieve_ai_impact_evidence_pack(
                 user_question=user_question,
                 onet_evidence=evidence,
                 top_k=research_top_k,
             )
-            research_inference = self.retrieve_research_inference_evidence(
-                user_question=user_question,
-                onet_evidence=evidence,
-                top_k=DEFAULT_RESEARCH_INFERENCE_TOP_K,
-            )
-            expanded_research_query = self._build_expanded_research_query(
-                user_question,
-                evidence,
-            )
-            ai_impact_context = self.format_ai_impact_context(ai_impact_evidence)
+            ai_impact_evidence = ai_evidence_pack.ai_impact_evidence
+            research_inference = ai_evidence_pack.research_inference
+            research_claims = ai_evidence_pack.research_claims
+            expanded_research_query = " | ".join(ai_evidence_pack.search_queries)
+            ai_impact_context = self.format_ai_evidence_pack_context(ai_evidence_pack)
             research_inference_context = self.format_research_inference_context(
                 research_inference
             )
@@ -1258,16 +2433,23 @@ class CareerRAGGenerator:
                 f"RETRIEVED RESEARCH EVIDENCE:\n{research_context}",
             )
 
-        try:
-            answer = self._chat_completion(messages=messages, temperature=0.2)
-        except Exception:
-            answer = self._fallback_answer(
+        if ai_impact_needed and ai_evidence_pack is not None:
+            answer = self._build_structured_ai_impact_answer(
                 user_question=user_question,
                 onet_evidence=evidence,
-                ai_impact_evidence=ai_impact_evidence,
-                research_inference=research_inference,
-                ai_impact_needed=ai_impact_needed,
+                pack=ai_evidence_pack,
             )
+        else:
+            try:
+                answer = self._chat_completion(messages=messages, temperature=0.2)
+            except Exception:
+                answer = self._fallback_answer(
+                    user_question=user_question,
+                    onet_evidence=evidence,
+                    ai_impact_evidence=ai_impact_evidence,
+                    research_inference=research_inference,
+                    ai_impact_needed=ai_impact_needed,
+                )
         answer = self._postprocess_ai_answer(answer, ai_impact_needed=ai_impact_needed)
 
         return {
@@ -1284,6 +2466,23 @@ class CareerRAGGenerator:
             "research_inference": research_inference,
             "research_inference_summary": self._build_research_inference_summary(
                 research_inference
+            ),
+            "ai_evidence_pack_summary": self._build_evidence_pack_summary(
+                ai_evidence_pack.chunks if ai_evidence_pack is not None else []
+            ),
+            "ai_task_exposures": [
+                {
+                    "task_text": exposure.task_text,
+                    "direct_anthropic_evidence": exposure.direct_anthropic_evidence,
+                    "inferred_applicability": exposure.inferred_applicability,
+                    "confidence": exposure.confidence,
+                    "main_reason": exposure.main_reason,
+                    "source_refs": exposure.source_refs,
+                }
+                for exposure in (ai_evidence_pack.task_exposures if ai_evidence_pack is not None else [])
+            ],
+            "ai_evidence_pack_queries": (
+                ai_evidence_pack.search_queries if ai_evidence_pack is not None else []
             ),
             "used_research": bool(old_research_needed or ai_impact_needed),
             "used_structured_ai_impact": ai_impact_needed,
@@ -1314,6 +2513,15 @@ class CareerRAGGenerator:
         k_per_query: int,
     ) -> list[dict[str, Any]]:
         """Retrieve evidence using normal and supplemental routing."""
+        if query_analysis.get("ai_impact_query"):
+            grounded_evidence = self._retrieve_ai_occupation_grounding(
+                query_analysis=query_analysis,
+                rewrite_result=rewrite_result,
+                k_per_query=k_per_query,
+            )
+            if grounded_evidence:
+                return grounded_evidence
+
         if not query_analysis.get("supplemental_needed"):
             return self._retrieve_evidence_from_rewrite(rewrite_result, k_per_query)
 
@@ -1344,6 +2552,38 @@ class CareerRAGGenerator:
             )
 
         return self._retrieve_evidence_from_rewrite(rewrite_result, k_per_query)
+
+    def _retrieve_ai_occupation_grounding(
+        self,
+        query_analysis: dict[str, Any],
+        rewrite_result: dict[str, Any],
+        k_per_query: int,
+    ) -> list[dict[str, Any]]:
+        """Resolve a named occupation for AI-impact questions before O*NET retrieval."""
+        query = self._analysis_query(query_analysis, rewrite_result)
+        alias_results, occupation_code, occupation_title = self._resolve_occupation(query)
+        if not occupation_code:
+            return []
+
+        top_alias_score = float(alias_results[0].get("score") or 0.0) if alias_results else 0.0
+        if top_alias_score < 0.56:
+            return []
+
+        title_or_code = occupation_title or occupation_code
+        evidence_groups = [
+            alias_results[:1],
+            self._normal_occupation_evidence(
+                query=f"{title_or_code} tasks main duties work activities",
+                occupation_code=occupation_code,
+                k=max(k_per_query, 8),
+            ),
+            self._normal_occupation_evidence(
+                query=f"{title_or_code} occupation overview skills knowledge abilities",
+                occupation_code=occupation_code,
+                k=min(max(k_per_query, 5), 8),
+            ),
+        ]
+        return self._merge_evidence_groups(evidence_groups, k_per_query)
 
     def _retrieve_alternative_career_evidence(
         self,
@@ -1870,6 +3110,44 @@ def print_answer(result: dict[str, Any], show_sources: bool = False) -> None:
     print(result["answer"])
 
     if show_sources:
+        unified_sources = result.get("ai_evidence_pack_summary") or []
+        if unified_sources:
+            print("\n=== RETRIEVED SOURCES ===")
+            print(
+                "collection | source_type | source_name | title | authors | year | "
+                "page | url | citation | section | occupation | task | score | doc_id"
+            )
+            for source in unified_sources:
+                task = CareerRAGGenerator._truncate(
+                    CareerRAGGenerator._one_line(source.get("task")),
+                    120,
+                )
+                title = CareerRAGGenerator._truncate(
+                    CareerRAGGenerator._one_line(source.get("title")),
+                    90,
+                )
+                citation = CareerRAGGenerator._truncate(
+                    CareerRAGGenerator._one_line(source.get("citation")),
+                    160,
+                )
+                print(
+                    f"{source.get('collection') or 'N/A'} | "
+                    f"{source.get('source_type') or 'N/A'} | "
+                    f"{source.get('source_name') or 'N/A'} | "
+                    f"{title or 'N/A'} | "
+                    f"{source.get('authors') or 'N/A'} | "
+                    f"{source.get('year') or 'N/A'} | "
+                    f"{source.get('page') or 'N/A'} | "
+                    f"{source.get('url') or 'N/A'} | "
+                    f"{citation or 'N/A'} | "
+                    f"{source.get('section') or 'N/A'} | "
+                    f"{source.get('occupation') or 'N/A'} | "
+                    f"{task or 'N/A'} | "
+                    f"{float(source.get('score') or 0.0):.4f} | "
+                    f"{source.get('doc_id') or 'N/A'}"
+                )
+            return
+
         print("\n=== O*NET SOURCES ===")
         print("collection | occupation title | SOC code | section | score")
         for source in result.get("evidence_summary", []):

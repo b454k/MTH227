@@ -9,4 +9,5 @@ pyarrow
 python-dotenv
 requests
 sentence-transformers
+streamlit
 tqdm

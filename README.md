@@ -36,6 +36,10 @@ Career RAG is a retrieval-augmented career guidance project. It combines:
 | `postprocess_ai_impact_claims.py` | Cleans labels, validates quotes, and prepares final research claim JSONL without API calls. |
 | `embed_ai_impact_claims.py` | Embeds final AI-impact claims into ChromaDB using `BAAI/bge-small-en-v1.5`. |
 | `config.py` | Shared project constants, including the single SentenceTransformer embedding model name. |
+| `occupation_aliases.py` | Resolves requested career titles such as Data Analyst or Machine Learning Engineer to local O*NET occupations and SOC codes. |
+| `ip_ai_impact.py` | Builds final-report AI-impact breakdowns from local Anthropic evidence when available, with clearly labeled heuristic fallback rows. |
+| `ip_final_report.py` | Builds and saves the final Interest Profiler career report JSON/Markdown using local O*NET DuckDB evidence and citations. |
+| `ip_report_ui.py` | Streamlit renderer for the final career report tabs, detail cards, AI tables, alternatives, and sources. |
 
 ## Scripts: `scripts/`
 
@@ -118,6 +122,95 @@ Research retrieval uses the BGE query prefix:
 ```text
 Represent this sentence for searching relevant passages: {query}
 ```
+
+## O*NET Interest Profiler Local PDF Version
+
+This project includes a local Streamlit implementation of the O*NET Interest Profiler Short Form. It uses PDF-derived JSON files from `onet_interest_profiler/` and does not call the O*NET Web Services API. This is the local PDF-based implementation until O*NET Web Services API approval is available.
+
+Run the UI:
+
+```powershell
+.venv\Scripts\python.exe -m streamlit run interest_profiler_app.py
+```
+
+Local files:
+
+| File | Purpose |
+| --- | --- |
+| `onet_interest_profiler/Interest_Profiler.pdf` | Source PDF for the 60 short-form activities. |
+| `onet_interest_profiler/IP_Career_Listings.pdf` | Source PDF for Interest Area + Job Zone career listings. |
+| `onet_interest_profiler/interest_profiler_questions.json` | Runtime JSON for the 60 activities; the app does not parse the PDF at runtime. |
+| `onet_interest_profiler/ip_career_listings.json` | Runtime JSON for local career matching; career titles only come from this file. |
+| `onet_interest_profiler/source_urls.txt` | Research/source links for the local profiler and follow-up design notes. |
+| `onet_interest_profiler/ip_profile_result.json` | Saved user profile result after submitting the Streamlit form. |
+| `onet_interest_profiler/ip_final_career_report.json` | Saved final career report after retrieval and report generation. |
+| `onet_interest_profiler/ip_final_career_report.md` | Optional readable markdown copy of the final report. |
+
+Scoring and matching:
+
+- The 60 activities are split evenly across Realistic, Investigative, Artistic, Social, Enterprising, and Conventional.
+- Each checked activity counts as 1 point; unchecked activities count as 0.
+- Each RIASEC score ranges from 0 to 10.
+- Exact ties and near ties within 1 point are marked as ambiguous instead of being treated as solved.
+- The initial Holland code is built from the top three deterministic interests, such as `ICS`.
+- Current Job Zone is used for immediate primary-interest matches; Future Job Zone is used for primary, secondary, and tertiary aspirational matches.
+- Job Zones 1-5 use the O*NET labels from little/no preparation through extensive preparation.
+
+LLM follow-up:
+
+- After the initial result, the app offers follow-up questions for tied/close profiles and optional personalization for clear profiles.
+- The follow-up asks tie-breaking, dynamic deepening, and future-vision questions one at a time.
+- If `OPENAI_API_KEY` is available in `.env`, the final refinement JSON can be produced by the LLM using `OPENAI_MODEL` or `gpt-4o-mini`.
+- If no LLM key is available, the app still works in `template_fallback` mode and records the answers without trying to infer deeply.
+- Raw O*NET scores and initial interests are preserved in `raw_riasec_scores` and `initial_top_interests`; LLM/template refinement is stored separately in `followup_refinement`.
+- The saved profile JSON is intentionally kept separate from Chroma. `prepare_profile_for_rag(profile_result)` prepares structured profile context for later generator integration without calling the retriever.
+
+Smoke test:
+
+```powershell
+.venv\Scripts\python.exe scripts\test_interest_profiler_local.py
+```
+
+## Final Career Report After Interest Profiler
+
+After the Streamlit Interest Profiler and optional follow-up questions are complete, click **Generate Final Career Report** in the app. The report builder loads `onet_interest_profiler/ip_profile_result.json` or the in-memory profile result, keeps raw RIASEC scores unchanged, and uses the follow-up refinement fields when present. The profile is used only as structured input; user profile data is not embedded into Chroma.
+
+The final report is built by `career_rag/ip_final_report.py`:
+
+- `prepare_profile_for_rag(profile_result)` supplies the RIASEC scores, Holland code, Job Zones, career titles, and prompt summary.
+- Follow-up fields such as `refined_top_interests`, `refined_holland_code`, `key_sub_preferences`, `future_vision_summary`, `concerns_noted`, and `career_matching_guidance` personalize the ranking.
+- For the current sample profile, the deterministic ranking prioritizes Data Analyst, Actuary, and Machine Learning Engineer before related analytics, math, technology, and business-facing roles.
+
+Occupation retrieval and alias mapping:
+
+- `career_rag/occupation_aliases.py` builds a local occupation index from `occupation_data`, `job_titles`, and `sample_of_reported_titles` in `data/duckdb/onet.duckdb`.
+- `resolve_career_alias(title, occupation_index)` returns the requested title, resolved O*NET title, O*NET-SOC code, resolution method, and confidence.
+- Alias display titles are kept readable. For example, a report can display "Machine Learning Engineer" while noting that O*NET evidence was retrieved from the closest local occupation title.
+- O*NET details come from DuckDB tables, not just the Interest Profiler career listing PDF: description, tasks, skills, knowledge, abilities, education, Job Zone, work context, software, and related occupations.
+
+AI-impact evidence:
+
+- `career_rag/ip_ai_impact.py` first looks for local structured Anthropic evidence in `data/processed/ai_impact_evidence_deduped.jsonl` and `data/processed/anthropic_ai_impact.jsonl`.
+- Retrieved Anthropic metrics are labeled by their real metric type, such as observed exposure or task penetration.
+- When no local task-level metric matches, the report uses `evidence_status = "heuristic_pending_source_retrieval"` and labels scores as heuristic.
+- NBER "The Rapid Adoption of Generative AI" is used only as broad labor-market/adoption context, not as task-level automation scoring.
+
+Citations:
+
+- `CitationManager` assigns numbered citation IDs such as `[1]`, `[2]`, and stores source metadata.
+- O*NET occupation facts cite the local DuckDB source.
+- Interest Profiler scores, Job Zones, and career-listing context cite the local O*NET PDFs.
+- Anthropic evidence cites the local structured evidence and source URL when rows are used.
+- NBER evidence is listed as broad context and is not presented as task-level automation data.
+- Inferred "day in the life" paragraphs are labeled as illustrative inference.
+
+Run the final-report smoke test without an LLM API key:
+
+```powershell
+.venv\Scripts\python.exe scripts\test_ip_final_report.py
+```
+
+The report still renders when `OPENAI_API_KEY` is missing. In that case, `report_generation_method` is `template_fallback`, using deterministic templates plus retrieved local evidence.
 
 ## Typical Build Flow
 

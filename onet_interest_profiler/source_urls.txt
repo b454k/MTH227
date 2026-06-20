@@ -1,0 +1,44 @@
+Hua et al. (2024), "The Career Interests of Large Language Models":
+https://arxiv.org/abs/2407.08564
+
+O*NET Interest Profiler resources:
+https://www.onetcenter.org/IP.html
+
+O*NET Interest Profiler Short Form PDF:
+https://www.onetcenter.org/dl_tools/ipsf/Interest_Profiler.pdf
+
+O*NET Career Listings PDF:
+https://www.onetcenter.org/dl_tools/ipsf/IP_Career_Listings.pdf
+
+O*NET Score Report PDF:
+https://www.onetcenter.org/dl_tools/ipsf/IP_Score_Report.pdf
+
+O*NET Score Report Starter PDF:
+https://www.onetcenter.org/dl_tools/ipsf/IP_Score_Report_Starter.pdf
+
+O*NET Interest Profiler Short Form Psychometric Report:
+https://www.onetcenter.org/reports/IPSF_Psychometric.html
+
+O*NET Interest Profiler Short Form Psychometric PDF:
+https://www.onetcenter.org/dl_files/IPSF_Psychometric.pdf
+
+Renji et al. (2025), "Steve: LLM Powered ChatBot for Career Progression":
+https://arxiv.org/abs/2504.03789
+
+Jeon et al. (2025), "Letters from Future Self: Augmenting the Letter-Exchange Exercise with LLM-based Agents to Enhance Young Adults' Career Exploration":
+https://arxiv.org/abs/2502.18881
+
+My Next Move Interest Browse:
+https://www.mynextmove.org/find/interests
+
+Anthropic Economic Index:
+https://www.anthropic.com/economic-index
+
+Anthropic labor-market impacts / observed exposure:
+https://www.anthropic.com/research/labor-market-impacts
+
+NBER: The Rapid Adoption of Generative AI:
+https://www.nber.org/papers/w32966
+
+NBER PDF: The Rapid Adoption of Generative AI:
+https://www.nber.org/system/files/working_papers/w32966/w32966.pdf

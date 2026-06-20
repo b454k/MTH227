@@ -1,0 +1,362 @@
+[
+  {
+    "id": 1,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Build kitchen cabinets"
+  },
+  {
+    "id": 2,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Drive a truck to deliver packages to offices and homes"
+  },
+  {
+    "id": 3,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Lay brick or tile"
+  },
+  {
+    "id": 4,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Test the quality of parts before shipment"
+  },
+  {
+    "id": 5,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Repair household appliances"
+  },
+  {
+    "id": 6,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Repair and install locks"
+  },
+  {
+    "id": 7,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Raise fish in a fish hatchery"
+  },
+  {
+    "id": 8,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Set up and operate machines to make products"
+  },
+  {
+    "id": 9,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Assemble electronic parts"
+  },
+  {
+    "id": 10,
+    "area": "Realistic",
+    "area_code": "R",
+    "text": "Put out forest fires"
+  },
+  {
+    "id": 11,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Develop a new medicine"
+  },
+  {
+    "id": 12,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Investigate the cause of a fire"
+  },
+  {
+    "id": 13,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Study ways to reduce water pollution"
+  },
+  {
+    "id": 14,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Develop a way to better predict the weather"
+  },
+  {
+    "id": 15,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Conduct chemical experiments"
+  },
+  {
+    "id": 16,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Work in a biology lab"
+  },
+  {
+    "id": 17,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Study the movement of planets"
+  },
+  {
+    "id": 18,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Invent a replacement for sugar"
+  },
+  {
+    "id": 19,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Examine blood samples using a microscope"
+  },
+  {
+    "id": 20,
+    "area": "Investigative",
+    "area_code": "I",
+    "text": "Do laboratory tests to identify diseases"
+  },
+  {
+    "id": 21,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Write books or plays"
+  },
+  {
+    "id": 22,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Paint sets for plays"
+  },
+  {
+    "id": 23,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Play a musical instrument"
+  },
+  {
+    "id": 24,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Write scripts for movies or television shows"
+  },
+  {
+    "id": 25,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Compose or arrange music"
+  },
+  {
+    "id": 26,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Perform jazz or tap dance"
+  },
+  {
+    "id": 27,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Draw pictures"
+  },
+  {
+    "id": 28,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Sing in a band"
+  },
+  {
+    "id": 29,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Create special effects for movies"
+  },
+  {
+    "id": 30,
+    "area": "Artistic",
+    "area_code": "A",
+    "text": "Edit movies"
+  },
+  {
+    "id": 31,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Teach an individual an exercise routine"
+  },
+  {
+    "id": 32,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Teach children how to play sports"
+  },
+  {
+    "id": 33,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Help people with personal or emotional problems"
+  },
+  {
+    "id": 34,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Teach sign language to people who are deaf or hard of hearing"
+  },
+  {
+    "id": 35,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Give career guidance to people"
+  },
+  {
+    "id": 36,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Help conduct a group therapy session"
+  },
+  {
+    "id": 37,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Perform rehabilitation therapy"
+  },
+  {
+    "id": 38,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Take care of children at a day-care center"
+  },
+  {
+    "id": 39,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Do volunteer work at a non-profit organization"
+  },
+  {
+    "id": 40,
+    "area": "Social",
+    "area_code": "S",
+    "text": "Teach a high-school class"
+  },
+  {
+    "id": 41,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Buy and sell stocks and bonds"
+  },
+  {
+    "id": 42,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Negotiate business contracts"
+  },
+  {
+    "id": 43,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Manage a retail store"
+  },
+  {
+    "id": 44,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Represent a client in a lawsuit"
+  },
+  {
+    "id": 45,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Operate a beauty salon or barber shop"
+  },
+  {
+    "id": 46,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Market a new line of clothing"
+  },
+  {
+    "id": 47,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Manage a department within a large company"
+  },
+  {
+    "id": 48,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Sell merchandise at a department store"
+  },
+  {
+    "id": 49,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Start your own business"
+  },
+  {
+    "id": 50,
+    "area": "Enterprising",
+    "area_code": "E",
+    "text": "Manage a clothing store"
+  },
+  {
+    "id": 51,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Develop a spreadsheet using computer software"
+  },
+  {
+    "id": 52,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Calculate the wages of employees"
+  },
+  {
+    "id": 53,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Proofread records or forms"
+  },
+  {
+    "id": 54,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Inventory supplies using a hand-held computer"
+  },
+  {
+    "id": 55,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Install software across computers on a large network"
+  },
+  {
+    "id": 56,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Record rent payments"
+  },
+  {
+    "id": 57,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Operate a calculator"
+  },
+  {
+    "id": 58,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Keep inventory records"
+  },
+  {
+    "id": 59,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Keep shipping and receiving records"
+  },
+  {
+    "id": 60,
+    "area": "Conventional",
+    "area_code": "C",
+    "text": "Stamp, sort, and distribute mail for an organization"
+  }
+]
