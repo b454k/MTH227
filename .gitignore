@@ -24,6 +24,11 @@ htmlcov/
 *.log
 test_results*.txt
 
+# Generated Interest Profiler user outputs
+onet_interest_profiler/ip_profile_result.json
+onet_interest_profiler/ip_final_career_report.json
+onet_interest_profiler/ip_final_career_report.md
+
 # Local databases and vector indexes
 *.duckdb
 *.sqlite
@@ -37,7 +42,15 @@ chroma_research/
 chroma_ai_impact/
 
 # Generated/downloaded datasets and processing outputs
-data/
+data/*
+!data/research/
+data/research/*
+!data/research/source_urls.txt
 
 # Large source data dumps; download/place locally before rebuilding
 onet_sql/*.sql
+
+# Temporary files from archive packaging
+data_archives/*.tmp
+data_archives/*.zip.tmp
+data_archives/_tmp/

@@ -6,11 +6,42 @@ Career RAG is a retrieval-augmented career guidance project. It combines:
 - AI/labor-market research evidence for automation exposure, augmentation, job loss, job creation, skill change, wage effects, productivity effects, and uncertainty.
 - A generator CLI that answers career questions using retrieved evidence.
 
+## Quick Start on a New Machine
+
+Use Python 3.11 or 3.12 if possible. The app can run without an OpenAI key, but LLM-powered follow-up/report text needs `OPENAI_API_KEY`.
+
+macOS/Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+cp .env.example .env
+python scripts/restore_data_archives.py
+python -m streamlit run interest_profiler_app.py
+```
+
+Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+python scripts\restore_data_archives.py
+python -m streamlit run interest_profiler_app.py
+```
+
+Fill in `.env` only with local secrets. Do not commit `.env`.
+
 ## Top-Level Items
 
 | Item | Purpose |
 | --- | --- |
 | `.env` | Local environment variables, especially `OPENAI_API_KEY` and optional model settings. This is ignored by git. |
+| `.env.example` | Safe template for teammate setup. Copy it to `.env` locally. |
 | `.gitignore` | Files and folders excluded from git, including `.env`, virtual environments, and Python caches. |
 | `.venv/` | Local Python virtual environment. Not part of the project logic. |
 | `.vscode/` | VS Code workspace settings. It points VS Code at `.venv\Scripts\python.exe` and auto-activates the environment. |
@@ -18,6 +49,7 @@ Career RAG is a retrieval-augmented career guidance project. It combines:
 | `career_rag/` | Main Python package for research collection/extraction, retrievers, and answer generation. |
 | `scripts/` | O*NET build/embed scripts plus one consolidated diagnostics CLI. |
 | `data/` | Local generated data, databases, Chroma stores, downloaded research files, and JSONL artifacts. |
+| `data_archives/` | Split zip bundle of ignored local data. Run `python scripts/restore_data_archives.py` after cloning. |
 | `onet_sql/` | Source O*NET SQL dump files imported into DuckDB. |
 | `chroma_research/` | Persistent ChromaDB collection for AI-impact research claims. |
 
@@ -54,6 +86,8 @@ Career RAG is a retrieval-augmented career guidance project. It combines:
 | `embed_onet_full_documents.py` | Embeds full O*NET occupation documents into Chroma collection `onet_full_occupations`. |
 | `embed_onet_supplemental_documents.py` | Embeds supplemental O*NET documents into Chroma collection `onet_supplemental`. |
 | `rag_diagnostics.py` | Consolidated read-only diagnostics CLI replacing old check/inspect/test scripts. |
+| `package_data_archives.py` | Creates split zip parts under `data_archives/` from ignored local runtime data. |
+| `restore_data_archives.py` | Restores ignored runtime data from `data_archives/` after a fresh clone. |
 
 Useful diagnostics examples:
 
@@ -122,6 +156,29 @@ Research retrieval uses the BGE query prefix:
 ```text
 Represent this sentence for searching relevant passages: {query}
 ```
+
+## Sharing Large Local Data
+
+Large runtime folders are ignored uncompressed:
+
+- `data/`
+- `chroma_ai_impact/`
+- `chroma_research/`
+- `onet_sql/*.sql`
+
+They are shared through `data_archives/` instead. The archive bundle preserves the same project-relative paths, so restoring it does not require code changes:
+
+```bash
+python scripts/restore_data_archives.py
+```
+
+To refresh the bundle after rebuilding data locally:
+
+```bash
+python scripts/package_data_archives.py
+```
+
+The default archive part size is below GitHub's hard single-file limit. Keep using git from the command line for upload/clone; GitHub's browser uploader may reject medium-size files even when git accepts them.
 
 ## O*NET Interest Profiler Local PDF Version
 
@@ -340,8 +397,9 @@ Force research retrieval:
 - Do not edit ChromaDB files directly.
 - Do not edit DuckDB files directly.
 - Do not commit `.env` or `.venv/`.
-- Large local artifacts are intentionally ignored by git, including DuckDB files, ChromaDB stores, downloaded PDFs, generated JSONL/CSV/XLSX research outputs, and O*NET SQL dumps.
-- To reproduce a fresh clone, place/download the O*NET SQL source files under `onet_sql/`, keep research URLs in `data/research/source_urls.txt`, then run the build flow above.
+- Large local artifacts are intentionally ignored uncompressed by git, including DuckDB files, ChromaDB stores, downloaded PDFs, generated JSONL/CSV/XLSX research outputs, and O*NET SQL dumps.
+- To reproduce the current local dataset from a fresh clone, run `python scripts/restore_data_archives.py`.
+- To rebuild from source instead, place/download the O*NET SQL source files under `onet_sql/`, keep research URLs in `data/research/source_urls.txt`, then run the build flow above.
 - `generator.py` is the user-facing answer path.
 - `retriever.py` and `research_retriever.py` are reusable retrieval layers.
 - `rag_diagnostics.py` is for inspection and smoke checks only; it should not be needed for normal answers.

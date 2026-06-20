@@ -1,0 +1,88 @@
+{
+  "bundle_name": "career_rag_data_bundle.zip",
+  "created_at_utc": "2026-06-20T16:43:45.367129+00:00",
+  "project_root": "career-rag",
+  "included_paths": [
+    "data",
+    "chroma_ai_impact",
+    "chroma_research",
+    "onet_sql"
+  ],
+  "file_count": 230,
+  "input_size_bytes": 1655765088,
+  "zip_size_bytes": 617560206,
+  "zip_sha256": "23c05c202acebe48e6ed49aa3b1a5a70828a1bf0c9ed0429336b4096928194f3",
+  "part_size_bytes": 47185920,
+  "parts": [
+    {
+      "name": "career_rag_data_bundle.zip.part001",
+      "size_bytes": 47185920,
+      "sha256": "137a704a2b45b6bc84ab16c408588a50d2c31142fd7b76cbc1c91ec522d0a48e"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part002",
+      "size_bytes": 47185920,
+      "sha256": "a5e0df87b50d98de12ca56c1a60152483600556f8bef7019680df4021ef9272a"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part003",
+      "size_bytes": 47185920,
+      "sha256": "a0dcf72eb7a983336a25a7a73184886744143b75ededea4494efd29b348dc758"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part004",
+      "size_bytes": 47185920,
+      "sha256": "c116ebad9c035284256f499ef02b53396580c311df5cb3b2d97b39ed7ce0eb5a"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part005",
+      "size_bytes": 47185920,
+      "sha256": "7a38763a7fc88c4ed6df9e11cb229e7ccfac8266fa49ef66ae7761180f036ae8"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part006",
+      "size_bytes": 47185920,
+      "sha256": "f383366b2ac60061700aac184d9bc51105a5220cc50fd7485b468e5b507bdacf"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part007",
+      "size_bytes": 47185920,
+      "sha256": "5c9d8f0eacdbe7ccd114f459f709f11b8daec7f3362be32972a2768d5edaed75"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part008",
+      "size_bytes": 47185920,
+      "sha256": "f8898802e0bf0eccc0d72486bc0729bde2f9884a11f14de898db1ea108818e22"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part009",
+      "size_bytes": 47185920,
+      "sha256": "ab10f1c13ce26b8476d099b7457592f6dddb38c807b96603be12df55971aeaee"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part010",
+      "size_bytes": 47185920,
+      "sha256": "deed47866aa1890ff7c5a796eae811e547a87d90f501dc1981fcd51d76ef5698"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part011",
+      "size_bytes": 47185920,
+      "sha256": "8926c38d9ba8cc0a1d1843a00200669577ca5a614706faf4f34225f7f5d8792b"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part012",
+      "size_bytes": 47185920,
+      "sha256": "7eca5a29076fb5b03f964221674ac251392a8864a3483db3655f1c02dd655b42"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part013",
+      "size_bytes": 47185920,
+      "sha256": "83437d79ef85e49a215c396d8e95d1b9549b73b0f41e15e67d83ee650eec8bf0"
+    },
+    {
+      "name": "career_rag_data_bundle.zip.part014",
+      "size_bytes": 4143246,
+      "sha256": "c15bf9f727a2e3ea9c5293a6d414af5f39e3fbd13b6ca94bab63e1fa4890c5bb"
+    }
+  ]
+}
