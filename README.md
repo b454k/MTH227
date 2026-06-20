@@ -250,3 +250,37 @@ Core NLP steps:
 Technologies used: Python, Streamlit, DuckDB, ChromaDB, SentenceTransformers, OpenAI API, pandas, PyMuPDF, BeautifulSoup, requests, and local O*NET/AI-impact data artifacts.
 
 In short, Career RAG turns an interest-profile questionnaire into an evidence-grounded career report by combining classic NLP preprocessing, embeddings, vector retrieval, structured occupation databases, and optional LLM generation.
+
+## References
+
+Primary O*NET and Interest Profiler sources:
+
+- O*NET Resource Center: https://www.onetcenter.org/
+- O*NET OnLine: https://www.onetonline.org/
+- O*NET Database downloads: https://www.onetcenter.org/database.html
+- O*NET Interest Profiler resources: https://www.onetcenter.org/IP.html
+- O*NET Interest Profiler web app: https://onetinterestprofiler.org/
+- My Next Move interest browser: https://www.mynextmove.org/find/interests
+- O*NET Interest Profiler Short Form PDF: https://www.onetcenter.org/dl_tools/ipsf/Interest_Profiler.pdf
+- O*NET Interest Profiler Career Listings PDF: https://www.onetcenter.org/dl_tools/ipsf/IP_Career_Listings.pdf
+- O*NET Interest Profiler Score Report PDF: https://www.onetcenter.org/dl_tools/ipsf/IP_Score_Report.pdf
+- O*NET Interest Profiler Score Report Starter PDF: https://www.onetcenter.org/dl_tools/ipsf/IP_Score_Report_Starter.pdf
+- O*NET Interest Profiler Short Form psychometric report: https://www.onetcenter.org/reports/IPSF_Psychometric.html
+
+AI-impact and labor-market evidence sources:
+
+- Anthropic Economic Index: https://www.anthropic.com/economic-index
+- Anthropic Economic Index dataset on Hugging Face: https://huggingface.co/datasets/Anthropic/EconomicIndex
+- Anthropic labor-market impacts of AI: https://www.anthropic.com/research/labor-market-impacts
+- NBER Working Paper w32966, "The Rapid Adoption of Generative AI": https://www.nber.org/papers/w32966
+- NBER Working Paper w32966 PDF: https://www.nber.org/system/files/working_papers/w32966/w32966.pdf
+- NBER Working Paper w31222, "Generative AI and Firm Values": https://www.nber.org/papers/w31222
+- NBER Working Paper w31222 PDF: https://www.nber.org/system/files/working_papers/w31222/w31222.pdf
+
+Career-guidance and LLM-related background sources used during development:
+
+- Hua et al. (2024), "The Career Interests of Large Language Models": https://arxiv.org/abs/2407.08564
+- Renji et al. (2025), "Steve: LLM Powered ChatBot for Career Progression": https://arxiv.org/abs/2504.03789
+- Jeon et al. (2025), "Letters from Future Self": https://arxiv.org/abs/2502.18881
+
+The expanded research corpus used by the collection scripts is listed in `data/research/source_urls.txt`.
