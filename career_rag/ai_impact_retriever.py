@@ -10,6 +10,7 @@ from typing import Any
 try:
     from career_rag.config import (
         EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
         require_hf_token,
         validate_collection_embedding_model,
     )
@@ -22,6 +23,7 @@ try:
 except ImportError:  # Allows: py career_rag/ai_impact_retriever.py
     from config import (  # type: ignore
         EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
         require_hf_token,
         validate_collection_embedding_model,
     )
@@ -55,7 +57,8 @@ def load_model() -> Any:
     from sentence_transformers import SentenceTransformer
 
     require_hf_token()
-    return SentenceTransformer(DEFAULT_MODEL)
+    with quiet_huggingface_model_load():
+        return SentenceTransformer(DEFAULT_MODEL)
 
 
 @lru_cache(maxsize=4)

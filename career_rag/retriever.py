@@ -14,6 +14,7 @@ from typing import Any
 try:
     from career_rag.config import (
         EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
         validate_collection_embedding_model,
@@ -21,6 +22,7 @@ try:
 except ImportError:  # Allows: py career_rag/retriever.py
     from config import (  # type: ignore
         EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
         validate_collection_embedding_model,
@@ -226,7 +228,8 @@ class OnetRetriever:
 
         require_hf_token()
         try:
-            self.model = SentenceTransformer(self.embedding_model_name)
+            with quiet_huggingface_model_load():
+                self.model = SentenceTransformer(self.embedding_model_name)
         except Exception as exc:
             raise RuntimeError(
                 f"Could not load embedding model '{self.embedding_model_name}'. "

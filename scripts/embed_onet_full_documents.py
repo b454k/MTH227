@@ -27,6 +27,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from career_rag.config import (
     EMBEDDING_MODEL_NAME,
     EXPECTED_EMBEDDING_DIMENSION,
+    quiet_huggingface_model_load,
     require_hf_token,
 )
 
@@ -85,7 +86,8 @@ def load_model() -> SentenceTransformer:
     """Load the sentence-transformer model used during indexing."""
     print(f"\nLoading embedding model: {MODEL_NAME}")
     require_hf_token()
-    model = SentenceTransformer(MODEL_NAME)
+    with quiet_huggingface_model_load():
+        model = SentenceTransformer(MODEL_NAME)
     print(f"Model loaded. Embedding dimension: {model.get_sentence_embedding_dimension()}")
     return model
 

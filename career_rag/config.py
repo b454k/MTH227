@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,27 @@ def require_hf_token() -> str:
     if not hf_token:
         raise ValueError("HF_TOKEN is missing. Add it to your .env file.")
     return hf_token
+
+
+@contextmanager
+def quiet_huggingface_model_load() -> Any:
+    """Suppress Hugging Face/SentenceTransformer model-load progress output."""
+    env_updates = {
+        "HF_HUB_DISABLE_PROGRESS_BARS": "1",
+        "TQDM_DISABLE": "1",
+    }
+    previous_values = {key: os.environ.get(key) for key in env_updates}
+    os.environ.update(env_updates)
+    with open(os.devnull, "w", encoding="utf-8") as devnull:
+        try:
+            with redirect_stdout(devnull), redirect_stderr(devnull):
+                yield
+        finally:
+            for key, previous_value in previous_values.items():
+                if previous_value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = previous_value
 
 
 def validate_collection_embedding_model(

@@ -8,7 +8,11 @@ from collections import Counter, defaultdict
 from typing import Any
 
 try:
-    from career_rag.config import EMBEDDING_MODEL_NAME, require_hf_token
+    from career_rag.config import (
+        EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
+        require_hf_token,
+    )
     from career_rag.ai_exposure_utils import (
         PROJECT_ROOT,
         normalize_text,
@@ -18,7 +22,11 @@ try:
         write_jsonl,
     )
 except ImportError:  # Allows: py career_rag/merge_ai_impact_evidence.py
-    from config import EMBEDDING_MODEL_NAME, require_hf_token  # type: ignore
+    from config import (  # type: ignore
+        EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
+        require_hf_token,
+    )
     from ai_exposure_utils import (  # type: ignore
         PROJECT_ROOT,
         normalize_text,
@@ -131,7 +139,8 @@ def load_near_duplicate_model() -> Any | None:
         return None
     require_hf_token()
     try:
-        return SentenceTransformer(EMBEDDING_MODEL_NAME)
+        with quiet_huggingface_model_load():
+            return SentenceTransformer(EMBEDDING_MODEL_NAME)
     except Exception:
         return None
 

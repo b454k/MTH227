@@ -21,6 +21,7 @@ try:
         EMBEDDING_MODEL_NAME,
         EXPECTED_EMBEDDING_DIMENSION,
         embedding_model_mismatch_message,
+        quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
     )
@@ -30,6 +31,7 @@ except ImportError:  # Allows: py career_rag/embed_ai_impact_claims.py
         EMBEDDING_MODEL_NAME,
         EXPECTED_EMBEDDING_DIMENSION,
         embedding_model_mismatch_message,
+        quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
     )
@@ -282,7 +284,8 @@ def load_model(model_name: str) -> SentenceTransformer:
     model_name = require_configured_embedding_model(model_name)
     require_hf_token()
     print(f"Loading embedding model: {model_name}")
-    model = SentenceTransformer(model_name)
+    with quiet_huggingface_model_load():
+        model = SentenceTransformer(model_name)
     dimension = get_embedding_dimension(model)
     print(f"Model loaded. Embedding dimension: {dimension}")
     if dimension != EXPECTED_EMBEDDING_DIMENSION:

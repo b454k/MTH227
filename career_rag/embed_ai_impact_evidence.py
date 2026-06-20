@@ -18,6 +18,7 @@ try:
         EMBEDDING_MODEL_NAME,
         EXPECTED_EMBEDDING_DIMENSION,
         embedding_model_mismatch_message,
+        quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
     )
@@ -33,6 +34,7 @@ except ImportError:  # Allows: py career_rag/embed_ai_impact_evidence.py
         EMBEDDING_MODEL_NAME,
         EXPECTED_EMBEDDING_DIMENSION,
         embedding_model_mismatch_message,
+        quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
     )
@@ -339,7 +341,8 @@ def main() -> int:
     model_name = require_configured_embedding_model(args.model)
     require_hf_token()
     print(f"Loading embedding model: {model_name}")
-    model = SentenceTransformer(model_name)
+    with quiet_huggingface_model_load():
+        model = SentenceTransformer(model_name)
 
     ai_inserted = 0
     research_inserted = 0

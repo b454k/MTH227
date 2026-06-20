@@ -16,6 +16,7 @@ try:
     from career_rag.config import (
         BGE_QUERY_PREFIX,
         EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
         require_hf_token,
         validate_collection_embedding_model,
     )
@@ -23,6 +24,7 @@ except ImportError:  # Allows: py career_rag/research_retriever.py
     from config import (  # type: ignore
         BGE_QUERY_PREFIX,
         EMBEDDING_MODEL_NAME,
+        quiet_huggingface_model_load,
         require_hf_token,
         validate_collection_embedding_model,
     )
@@ -224,7 +226,8 @@ def _load_model() -> Any:
         ) from exc
 
     require_hf_token()
-    return SentenceTransformer(DEFAULT_MODEL)
+    with quiet_huggingface_model_load():
+        return SentenceTransformer(DEFAULT_MODEL)
 
 
 @lru_cache(maxsize=1)

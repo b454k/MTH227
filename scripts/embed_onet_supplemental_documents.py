@@ -20,6 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from career_rag.config import (
     EMBEDDING_MODEL_NAME,
     EXPECTED_EMBEDDING_DIMENSION,
+    quiet_huggingface_model_load,
     require_hf_token,
 )
 
@@ -88,7 +89,8 @@ def load_model() -> SentenceTransformer:
     """Load the embedding model used by the existing O*NET collections."""
     print(f"\nLoading embedding model: {MODEL_NAME}")
     require_hf_token()
-    model = SentenceTransformer(MODEL_NAME)
+    with quiet_huggingface_model_load():
+        model = SentenceTransformer(MODEL_NAME)
     if hasattr(model, "get_embedding_dimension"):
         embedding_dimension = model.get_embedding_dimension()
     else:
