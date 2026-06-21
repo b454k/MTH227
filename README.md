@@ -1,4 +1,4 @@
-# Career RAG
+# AI Aware Career  Guide
 
 Install dependencies, restore/check local RAG artifacts, and run the Streamlit app from the project root:
 
@@ -17,7 +17,7 @@ python scripts\build_all_artifacts.py
 
 ## Project Overview
 
-Career RAG is a local career-guidance application built for an Applied NLP workflow. It combines the O*NET Interest Profiler, O*NET occupation data, vector retrieval, and AI labor-market evidence to help a user move from interests to grounded career recommendations.
+AI Aware Career Guide is a local career-guidance application built for an Applied NLP workflow. It combines the O*NET Interest Profiler, O*NET occupation data, vector retrieval, and AI labor-market evidence to help a user move from interests to grounded career recommendations.
 
 The final app is `interest_profiler_app.py`. It asks the O*NET Interest Profiler short-form questions, computes RIASEC scores, lets the user choose current and future Job Zones, optionally asks follow-up questions, ranks matching careers, and generates a cited final career report. Follow-up ranking and report generation require local O*NET DuckDB, JSONL, Chroma, and AI-impact evidence artifacts; if they are missing, the app stops and shows rebuild instructions.
 
@@ -412,7 +412,7 @@ Core NLP steps:
 
 Technologies used: Python, Streamlit, DuckDB, ChromaDB, SentenceTransformers, OpenAI API, pandas, PyMuPDF, BeautifulSoup, requests, and local O*NET/AI-impact data artifacts.
 
-In short, Career RAG turns an interest-profile questionnaire into an evidence-grounded career report by combining classic NLP preprocessing, embeddings, vector retrieval, structured occupation databases, and optional LLM generation.
+In short, AI Aware Career Guide turns an interest-profile questionnaire into an evidence-grounded career report by combining classic NLP preprocessing, embeddings, vector retrieval, structured occupation databases, and optional LLM generation.
 
 ## References
 
