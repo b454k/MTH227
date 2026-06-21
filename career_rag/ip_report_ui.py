@@ -89,10 +89,6 @@ def _render_top_matches(report: dict[str, Any]) -> None:
         "This report shows up to five careers for your current Job Zone and up to five "
         "careers for the future Job Zone you are willing to work toward."
     )
-    shared_reasons = _shared_match_reasons(matches)
-    if shared_reasons:
-        st.markdown("**Why these careers surfaced**")
-        _write_bullets(shared_reasons)
 
     for group_label, group_matches in _group_top_matches(matches):
         if group_label:
@@ -155,8 +151,10 @@ def _render_ai_table(match: dict[str, Any]) -> None:
         _render_wrapped_table(rows)
         st.caption(
             "AI exposure signal is a plain-language level from the local task evidence. "
-            "Score is the underlying dataset value when available; N/A means no exact "
-            "local task match, not zero AI impact."
+            "Score represents Observed Claude Usage Share as a percentage, not a "
+            "0-100 risk score. For example, a score of 0.4015 means 0.4015% of "
+            "mapped Claude conversations, approximately 4 out of every 1,000. "
+            "N/A means no exact local task match, not zero AI impact."
         )
     else:
         st.info("No AI impact rows were available for this occupation.")

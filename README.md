@@ -117,39 +117,77 @@ If the archive parts become too large for normal GitHub storage, move them to Gi
 
 ## What The App Does
 
-The Streamlit flow is:
+The Streamlit app turns an O*NET Interest Profiler session into a cited career report. It does not only rank careers; it also shows the evidence behind the rankings and compares the profile against the semantic retrieval indexes.
+
+The user-facing flow is:
 
 1. Load the local O*NET Interest Profiler short-form questions from `onet_interest_profiler/interest_profiler_questions.json`.
 2. Score the six Holland/RIASEC interests: Realistic, Investigative, Artistic, Social, Enterprising, and Conventional.
 3. Detect clear, tied, or near-tied interest profiles.
-4. Ask current and future Job Zone preferences to respect education, training, and preparation constraints.
+4. Ask current and future Job Zone preferences so recommendations respect education, training, and preparation constraints.
 5. Match careers from the local O*NET Interest Profiler career listing JSON.
-6. Optionally ask follow-up questions to refine ambiguous or personalized preferences.
-7. Resolve career titles to O*NET occupations and SOC codes.
-8. Retrieve local O*NET evidence and AI-impact evidence.
-9. Render a final report with ranked careers, explanations, task/skill evidence, AI-impact notes, alternatives, and citations.
+6. Optionally ask follow-up questions about work setting, people/data/things/ideas, independence, team style, impact, structure, strengths, recognition, concerns, and future vision.
+7. Use follow-up answers to refine the profile and rerank candidate careers.
+8. Resolve displayed career titles to local O*NET occupations and O*NET-SOC codes.
+9. Build a final report with two different evidence views: **Top Matches** and **Semantic Report**.
+
+The final report tabs have different jobs:
+
+| Window | Main purpose | How to read it |
+| --- | --- | --- |
+| **Top Matches** | Shows the main recommendations selected from the Interest Profiler career-match pipeline. | Treat this as the ranked recommendation list. Each card is a specific resolved occupation with job details, skills, education, day-in-the-life text, and task-level AI-impact notes. |
+| **Semantic Report** | Shows what the vector indexes surface when the whole profile and follow-up text are used as semantic search queries. | Treat this as an evidence comparison and sanity check. It can confirm the Top Matches, explain why related careers surfaced, or reveal nearby careers that are semantically similar to the user's preferences. |
 
 ## How The App Works
 
 `interest_profiler_app.py` is the user-facing Streamlit application. It keeps the current profile, follow-up state, and generated report in Streamlit session state, while also saving durable JSON outputs under `onet_interest_profiler/`.
 
-The app works in four stages:
+The app works in five stages:
 
 1. **Interest Profiler scoring**: the app loads `interest_profiler_questions.json`, records checked activities, and uses `career_rag/interest_profiler_local.py` to compute six RIASEC scores and a Holland code.
 2. **Career candidate matching**: `career_rag/ip_career_matcher.py` matches the highest RIASEC interests against `ip_career_listings.json`, filtered by current and future O*NET Job Zones.
 3. **Optional follow-up refinement**: `career_rag/ip_followup_agent.py` asks open-ended questions, optionally uses OpenAI to interpret answers, and `career_rag/ip_refinement_ranker.py` adjusts the ranked career list using preferences, Job Zones, O*NET occupation details, and follow-up text.
-4. **Final report generation**: `career_rag/ip_final_report.py` resolves titles to O*NET-SOC codes, pulls occupation details from DuckDB, retrieves semantic O*NET and AI-impact evidence, builds citations, and saves `ip_final_career_report.json` and `ip_final_career_report.md`. `career_rag/ip_report_ui.py` renders that report in the app.
+4. **Top Matches report construction**: `career_rag/ip_final_report.py` builds two candidate pools, one for the current Job Zone and one for the future Job Zone. It takes up to five careers from each pool, resolves each title to an O*NET-SOC code, retrieves structured occupation details from DuckDB, attaches exact local AI-impact task evidence when available, and creates the detailed match cards.
+5. **Semantic Report construction**: `career_rag/ip_semantic_report.py` builds semantic queries from the final Holland code, RIASEC interests, current/future Job Zones, follow-up answer text, preferences, future vision, and concerns. It searches the O*NET and AI-impact Chroma collections, reranks results by similarity, follow-up overlap, query weight, and Job Zone match, then creates a separate comparison report.
 
 The app checks required artifacts before RAG-heavy steps. If the DuckDB database, JSONL documents, or Chroma collections are missing, it shows rebuild/restore instructions instead of silently producing weak results.
 
+### Top Matches Vs Semantic Report
+
+The **Top Matches** window is candidate-first. It starts from careers that the O*NET Interest Profiler listing already associates with the user's strongest interests and selected Job Zones. If follow-up answers exist, the app uses `final_ranked_matches` or `refined_career_matches`; otherwise it uses the original `career_matches` groups. The report builder then fills each selected career with local evidence.
+
+Top Matches retrieval/enrichment flow:
+
+1. Candidate careers come from `ip_career_listings.json`, grouped by `primary_current_zone`, `primary_future_zone`, `secondary_future_zone`, and `tertiary_future_zone`.
+2. `_candidate_groups_from_profile()` creates "Current Job Zone options" and "Future Job Zone options" with a limit of five per group.
+3. `resolve_career_alias()` maps each display title to an O*NET occupation title and O*NET-SOC code using the local occupation index.
+4. `get_onet_occupation_details()` queries `data/duckdb/onet.duckdb` for description, tasks, skills, knowledge, abilities, education, Job Zone, work context, software, and related occupations.
+5. `build_ai_impact_for_occupation()` reads local structured AI-impact JSONL rows and uses exact O*NET-SOC/task matches where possible; if no exact local task row exists, the card labels that as missing evidence instead of treating it as zero impact.
+6. `_build_match()` packages the card with fit label, why-it-fits text, O*NET details, key skills, education, day-in-the-life text, and AI-impact breakdown.
+
+The **Semantic Report** window is query-first. It does not begin from the Interest Profiler career-listing candidates. Instead, it asks: "When the user's whole profile is used as a search query, which O*NET and AI-impact documents are nearest in the vector indexes?"
+
+Semantic Report retrieval flow:
+
+1. `_build_semantic_queries()` creates up to three query types: `followup_answers`, `preferences`, and `interest_profiler`.
+2. Follow-up-answer queries get the strongest query weight, preference queries get a medium weight, and the broad Interest Profiler query gets a lower weight.
+3. `_retrieve_onet_queries()` calls `OnetRetriever.retrieve_smart()` against Chroma O*NET collections such as `onet_sections` and `onet_full_occupations`.
+4. `_retrieve_ai_queries()` calls `retrieve_ai_impact()` against the structured AI-impact Chroma collection.
+5. `_score_row()` adjusts each retrieved row by Chroma similarity, follow-up term overlap, query weight, and whether its Job Zone matches the user's current or future Job Zone.
+6. `_select_diverse_rows()` keeps diverse evidence, limiting repeated rows from the same occupation title.
+7. `_career_signals()` combines cited O*NET and AI-impact rows into a "Careers Surfaced By Semantic Retrieval" table. O*NET evidence has higher weight than AI-impact evidence because occupation fit is the primary signal.
+
+In short: **Top Matches** explains the app's chosen ranked recommendations; **Semantic Report** explains what the semantic indexes independently retrieve from the user's full profile. A career can appear in both, but it does not have to.
+
 ## RAG Implementation
 
-This project uses retrieval-augmented generation in two related ways:
+This project uses retrieval-augmented generation in three related ways:
 
 1. **O*NET occupation RAG**: O*NET SQL tables are imported into DuckDB, transformed into JSONL documents, embedded with SentenceTransformers, and indexed in ChromaDB. Runtime code retrieves occupation sections, full occupation profiles, and supplemental documents for the user's career question or profile.
 2. **AI-impact RAG**: Anthropic Economic Index evidence, NBER-derived evidence, and selected research/methodology chunks are normalized into JSONL rows, embedded, and indexed in separate Chroma collections. Runtime code retrieves these rows for AI exposure, task penetration, methodology, and caveats.
+3. **Profile/report RAG**: the final report combines deterministic candidate matching, exact DuckDB lookups, vector retrieval, and optional OpenAI generation. Top Matches uses exact occupation retrieval after candidate selection; Semantic Report uses open-ended profile queries directly against the vector stores.
 
-The retrieval flow is:
+The shared retrieval flow is:
 
 1. Source data is converted to typed local artifacts: DuckDB tables for structured O*NET data, JSONL files for retrievable text documents, and Chroma persistent collections for vector search.
 2. Queries are formed from either a user question, a resolved occupation, or the Interest Profiler result: RIASEC scores, Holland code, Job Zones, and follow-up answer text.
@@ -157,6 +195,18 @@ The retrieval flow is:
 4. Chroma returns nearest-neighbor documents plus metadata such as occupation title, O*NET-SOC code, section, document type, source, task ID, page, metric, and score.
 5. The generator/report builder reranks or filters results by occupation code, title, task match, Job Zone, follow-up term overlap, source type, and evidence confidence.
 6. Retrieved evidence is passed to report templates or OpenAI prompts with strict grounding instructions and citation IDs.
+
+Top Matches and Semantic Report use the same artifact ecosystem but not the same retrieval strategy:
+
+| Aspect | Top Matches | Semantic Report |
+| --- | --- | --- |
+| Starting point | Interest Profiler candidate careers from JSON listings, optionally reranked by follow-up refinement. | Free-text semantic queries built from profile fields and follow-up answers. |
+| Primary data source | DuckDB occupation tables after title/SOC resolution. | Chroma vector collections for O*NET and AI-impact evidence. |
+| Main retrieval unit | One resolved occupation at a time. | Many semantically similar chunks across occupations and evidence types. |
+| Matching logic | RIASEC interest + current/future Job Zone + candidate ranking + exact O*NET-SOC lookup. | Embedding similarity + query weights + follow-up term overlap + Job Zone boost/penalty. |
+| AI-impact content | Occupation/task-specific rows from local structured AI evidence, preferably exact task matches. | Semantically retrieved AI-impact rows used as comparison evidence. |
+| Output | Detailed ranked cards for the recommended careers. | Summary, relevant-career explanation, technology/AI role, takeaways, retrieved evidence tables, and semantic career signals. |
+| Interpretation | "These are the app's recommendations." | "These are the careers/evidence the vector indexes surface from the full profile." |
 
 ### Models, Technologies, Databases, And Data Types
 
