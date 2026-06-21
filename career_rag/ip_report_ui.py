@@ -40,7 +40,6 @@ def render_final_career_report(report: dict[str, Any]) -> None:
             "Summary",
             "Top Matches",
             "Alternatives",
-            "Future Impact",
             "Semantic Report",
             "Sources",
         ]
@@ -53,10 +52,8 @@ def render_final_career_report(report: dict[str, Any]) -> None:
     with tabs[2]:
         _render_alternatives(report)
     with tabs[3]:
-        _render_future_impact(report)
-    with tabs[4]:
         _render_semantic_report(report)
-    with tabs[5]:
+    with tabs[4]:
         _render_sources(report)
 
 
@@ -132,11 +129,6 @@ def _render_job_detail(match: dict[str, Any]) -> None:
 
     st.markdown("**AI Impact Breakdown**")
     _render_ai_table(match)
-    ai_summary = match.get("ai_impact", {}).get("future_outlook_summary") or ""
-    if ai_summary:
-        st.markdown("**Future Outlook**")
-        st.info(_without_citations(ai_summary))
-        _write_source_indexes(ai_summary)
 
     st.markdown("**Day In The Life**")
     day_text = match.get("day_in_the_life") or ""
@@ -184,59 +176,6 @@ def _render_alternatives(report: dict[str, Any]) -> None:
         st.markdown(f"- **{item.get('title')}** - {zone}{suffix}")
 
 
-def _render_future_impact(report: dict[str, Any]) -> None:
-    st.subheader("Future Impact")
-    section = report.get("future_impact_summary") or {}
-    if not section:
-        st.info("Generate a new final report to add the semantic research impact summary.")
-        return
-
-    status = section.get("status")
-    summary = section.get("summary") or ""
-    if status != "ok":
-        st.info(_without_citations(summary) or "Semantic research retrieval did not return a summary.")
-        if section.get("error"):
-            st.caption(str(section["error"]))
-        return
-
-    st.caption(
-        "This section is retrieved semantically from the extracted AI-impact research papers "
-        "using the final profile and recommended careers as the query."
-    )
-    if summary:
-        st.info(_without_citations(summary))
-        _write_source_indexes(summary)
-
-    takeaways = section.get("takeaways") or []
-    if takeaways:
-        st.markdown("**What this means for planning**")
-        for item in takeaways:
-            st.write(f"- {_without_citations(item)}")
-        _write_source_indexes(takeaways)
-
-    retrieved = section.get("retrieved_research") or []
-    if retrieved:
-        with st.expander("Retrieved research evidence", expanded=False):
-            rows = []
-            source_map = _source_map(report)
-            for item in retrieved:
-                source_id = item.get("source_id")
-                title = item.get("title") or "Research source"
-                page = f", page {item.get('page')}" if item.get("page") else ""
-                source = source_map.get(int(source_id or 0), {})
-                source_label = f"[{source_id}]"
-                if source.get("url"):
-                    source_label = f"[[{source_id}]]({source['url']})"
-                rows.append(
-                    {
-                        "Source": source_label,
-                        "Paper": f"{title}{page}",
-                        "Retrieved passage": item.get("snippet") or "",
-                    }
-                )
-            _render_wrapped_table(rows)
-
-
 def _render_semantic_report(report: dict[str, Any]) -> None:
     st.subheader("Semantic Retrieval Report")
     section = report.get("semantic_retrieval_report") or {}
@@ -245,8 +184,10 @@ def _render_semantic_report(report: dict[str, Any]) -> None:
         return
 
     st.caption(
-        "This comparison uses the final profile as a semantic query over O*NET and "
-        "AI-impact vector indexes. It is separate from the scoring-based top matches."
+        "This comparison uses follow-up answers and preferences as the strongest semantic "
+        "search signal, with the selected current and future Job Zones used to keep results "
+        "aligned with the user's education/preparation choices. It is separate from the "
+        "scoring-based top matches."
     )
 
     summary = section.get("summary") or ""
@@ -258,27 +199,36 @@ def _render_semantic_report(report: dict[str, Any]) -> None:
                 st.caption(f"{label}: {error}")
         return
 
-    if summary:
-        st.info(_without_citations(summary))
-        _write_source_indexes(summary)
-
-    takeaways = section.get("takeaways") or []
-    if takeaways:
-        st.markdown("**Comparison Notes**")
-        for item in takeaways:
-            st.write(f"- {_without_citations(item)}")
-        _write_source_indexes(takeaways)
+    semantic_markdown = _semantic_report_markdown(section)
+    if semantic_markdown:
+        with st.container(border=True):
+            st.markdown(format_semantic_report(semantic_markdown))
+            _write_source_indexes(
+                [
+                    section.get("relevant_careers_explanation"),
+                    section.get("technology_ai_role"),
+                    section.get("takeaways"),
+                    summary,
+                ]
+            )
 
     signals = section.get("semantic_career_signals") or []
     if signals:
         st.markdown("**Careers Surfaced By Semantic Retrieval**")
+        st.caption(
+            "Similarity signal is a weighted average of Chroma similarity scores. "
+            "Rows retrieved from follow-up-answer queries count more than broad profile rows; "
+            "O*NET evidence has weight 2 and AI-impact evidence has weight 1. Careers outside "
+            "the selected Job Zones are penalized."
+        )
         rows = []
         for item in signals:
             rows.append(
                 {
                     "Career": item.get("title") or "",
                     "O*NET-SOC": item.get("soc_code") or "",
-                    "Semantic signal": item.get("semantic_signal") or "",
+                    "Job Zone": item.get("job_zone") or "",
+                    "Similarity signal": item.get("semantic_signal") or "",
                     "Sources": _format_source_ids(item.get("source_ids") or []),
                 }
             )
@@ -294,6 +244,7 @@ def _render_semantic_report(report: dict[str, Any]) -> None:
                         "Career / section": " - ".join(
                             part for part in [item.get("title"), item.get("section")] if part
                         ),
+                        "Job Zone": item.get("job_zone") or "",
                         "Retrieved passage": item.get("snippet") or "",
                     }
                     for item in onet_rows
@@ -310,6 +261,7 @@ def _render_semantic_report(report: dict[str, Any]) -> None:
                         "Occupation / signal": " - ".join(
                             part for part in [item.get("occupation"), item.get("impact_type")] if part
                         ),
+                        "Job Zone": item.get("job_zone") or "",
                         "Task": item.get("task") or "",
                         "Retrieved passage": item.get("snippet") or "",
                     }
@@ -333,6 +285,70 @@ def _render_sources(report: dict[str, Any]) -> None:
                 st.caption(source["note"])
             if source.get("url"):
                 st.write(source["url"])
+
+
+def _semantic_report_markdown(section: dict[str, Any]) -> str:
+    """Build the semantic report body as markdown before display cleanup."""
+    relevant = section.get("relevant_careers_explanation") or section.get("summary") or ""
+    technology = section.get("technology_ai_role") or ""
+    takeaways = section.get("takeaways") or []
+
+    parts = []
+    if relevant:
+        parts.append(f"Relevant Careers {relevant}")
+    if technology:
+        parts.append(f"Role of Technology and AI {technology}")
+    if takeaways:
+        bullet_text = " ".join(f"- {item}" for item in takeaways if str(item or "").strip())
+        parts.append(f"Takeaways {bullet_text}")
+    return "\n\n".join(parts)
+
+
+def format_semantic_report(text: str) -> str:
+    """Clean malformed semantic-report markdown while preserving content."""
+    cleaned = str(text or "").strip()
+    if not cleaned:
+        return ""
+
+    cleaned = cleaned.replace("\r\n", "\n").replace("\r", "\n")
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+
+    heading_titles = {
+        "relevant careers": "Relevant Careers",
+        "role of technology and ai": "Role of Technology and AI",
+        "takeaways": "Takeaways",
+    }
+    for title in heading_titles.values():
+        escaped = re.escape(title)
+        cleaned = re.sub(
+            rf"(?i)\b{escaped}\s+{escaped}\b",
+            title,
+            cleaned,
+        )
+
+    heading_pattern = re.compile(
+        r"(?i)(^|\s+)(?:#{1,6}\s*)?"
+        r"(Relevant Careers|Role of Technology and AI|Takeaways)\s*:?\s*"
+    )
+
+    def heading_replacement(match: re.Match[str]) -> str:
+        raw_title = re.sub(r"\s+", " ", match.group(2)).strip().lower()
+        title = heading_titles.get(raw_title, match.group(2).strip())
+        prefix = "" if match.start() == 0 else "\n\n"
+        return f"{prefix}#### {title}\n\n"
+
+    cleaned = heading_pattern.sub(heading_replacement, cleaned)
+
+    # Put inline markdown headings and bullets on their own lines.
+    cleaned = re.sub(r"(?<!\n)\s+(#{1,6}\s+)", r"\n\n\1", cleaned)
+    cleaned = re.sub(r"(?<!\n)\s+-\s+", "\n- ", cleaned)
+    cleaned = re.sub(r"\n(-\s+)", r"\n\n\1", cleaned, count=1)
+
+    # If an LLM returned all bullets in one paragraph, split each new bullet.
+    cleaned = re.sub(r"(?m)([^\n])\s+(-\s+[A-Z0-9])", r"\1\n\2", cleaned)
+    cleaned = re.sub(r"(?m)^(#### .+)\n(?!\n)", r"\1\n\n", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 def _render_wrapped_table(rows: list[dict[str, Any]]) -> None:

@@ -23,7 +23,6 @@ from career_rag.interest_profiler_local import (
 )
 from career_rag.ip_ai_impact import build_ai_impact_for_occupation
 from career_rag.ip_career_matcher import load_ip_career_listings, match_careers
-from career_rag.ip_future_impact import build_future_impact_summary
 from career_rag.ip_followup_agent import OpenAIChatProvider
 from career_rag.ip_semantic_report import build_semantic_retrieval_report
 from career_rag.occupation_aliases import build_occupation_index, resolve_career_alias
@@ -210,11 +209,6 @@ def build_final_career_report(profile_for_rag: dict[str, Any], top_k: int = 10) 
             "`python scripts\\check_artifacts.py` before generating a report."
         )
 
-    future_impact_summary = build_future_impact_summary(
-        profile_used=profile_used,
-        top_matches=top_matches,
-        citation_manager=citation_manager,
-    )
     semantic_retrieval_report = build_semantic_retrieval_report(
         profile_used=profile_used,
         citation_manager=citation_manager,
@@ -223,14 +217,12 @@ def build_final_career_report(profile_for_rag: dict[str, Any], top_k: int = 10) 
     report = {
         "report_generation_method": "template_fallback_local_evidence",
         "top_match_grouping": "current_zone_5_future_zone_5",
-        "future_impact_method": "semantic_research_rag",
         "semantic_report_method": "semantic_onet_ai_impact_report",
         "llm_system_prompt_available": True,
         "profile_used": profile_used,
         "core_skills_across_matches": _core_skills_from_matches(top_matches),
         "top_matches": top_matches,
         "alternative_careers": alternatives,
-        "future_impact_summary": future_impact_summary,
         "semantic_retrieval_report": semantic_retrieval_report,
         "sources": citation_manager.sources(),
     }
@@ -387,23 +379,16 @@ def report_to_markdown(report: dict[str, Any]) -> str:
         marker_text = f" {source_marker}" if source_marker else ""
         lines.append(f"- {item.get('title')}:{zone_text}{marker_text}")
 
-    future_impact = report.get("future_impact_summary") or {}
-    lines.extend(["", "## Future Impact"])
-    if future_impact.get("summary"):
-        lines.append(str(future_impact["summary"]))
-    for item in future_impact.get("takeaways") or []:
-        lines.append(f"- {item}")
-    if future_impact.get("retrieved_research"):
-        lines.append("")
-        lines.append("Retrieved research:")
-        for item in future_impact.get("retrieved_research") or []:
-            page = f", page {item.get('page')}" if item.get("page") else ""
-            lines.append(f"- [{item.get('source_id')}] {item.get('title')}{page}: {item.get('snippet')}")
-
     semantic_report = report.get("semantic_retrieval_report") or {}
     lines.extend(["", "## Semantic Retrieval Report"])
+    if semantic_report.get("relevant_careers_explanation"):
+        lines.extend(["", "### Relevant Careers", str(semantic_report["relevant_careers_explanation"])])
+    if semantic_report.get("technology_ai_role"):
+        lines.extend(["", "### Role of Technology and AI", str(semantic_report["technology_ai_role"])])
     if semantic_report.get("summary"):
-        lines.append(str(semantic_report["summary"]))
+        lines.extend(["", "### Summary", str(semantic_report["summary"])])
+    if semantic_report.get("takeaways"):
+        lines.extend(["", "### Takeaways"])
     for item in semantic_report.get("takeaways") or []:
         lines.append(f"- {item}")
     if semantic_report.get("semantic_career_signals"):
@@ -412,7 +397,8 @@ def report_to_markdown(report: dict[str, Any]) -> str:
         for item in semantic_report.get("semantic_career_signals") or []:
             markers = " ".join(f"[{source_id}]" for source_id in item.get("source_ids") or [])
             soc = f" ({item.get('soc_code')})" if item.get("soc_code") else ""
-            lines.append(f"- {item.get('title')}{soc}: {markers}")
+            score = item.get("semantic_signal")
+            lines.append(f"- {item.get('title')}{soc}: similarity {score} {markers}")
 
     lines.extend(["", "## Sources"])
     for source in report.get("sources") or []:
@@ -489,12 +475,24 @@ def _build_profile_used(profile_input: dict[str, Any], ip_marker: str) -> dict[s
         "future_job_zone": future_job_zone,
         "preferences_used": sub_preferences,
         "sub_preferences": sub_preferences,
+        "followup_answers": questions_asked,
+        "followup_answer_text": _followup_answer_text(questions_asked),
         "future_vision_summary": str(final_refinement.get("future_vision_summary") or "").strip(),
         "concerns_noted": list(final_refinement.get("concerns_noted") or []),
         "career_matching_guidance": guidance.get("notes")
         or "Use future job zone for aspirational recommendations, current job zone for immediate options.",
         "profile_citation": ip_marker,
     }
+
+
+def _followup_answer_text(questions_asked: list[dict[str, Any]]) -> str:
+    parts = []
+    for item in questions_asked:
+        question = str(item.get("question") or "").strip()
+        answer = str(item.get("answer") or "").strip()
+        if answer:
+            parts.append(f"{question} {answer}".strip())
+    return re.sub(r"\s+", " ", " ".join(parts)).strip()
 
 
 def _candidate_titles_from_profile(profile_input: dict[str, Any]) -> list[str]:

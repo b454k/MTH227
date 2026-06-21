@@ -129,10 +129,103 @@ The Streamlit flow is:
 8. Retrieve local O*NET evidence and AI-impact evidence.
 9. Render a final report with ranked careers, explanations, task/skill evidence, AI-impact notes, alternatives, and citations.
 
+## How The App Works
+
+`interest_profiler_app.py` is the user-facing Streamlit application. It keeps the current profile, follow-up state, and generated report in Streamlit session state, while also saving durable JSON outputs under `onet_interest_profiler/`.
+
+The app works in four stages:
+
+1. **Interest Profiler scoring**: the app loads `interest_profiler_questions.json`, records checked activities, and uses `career_rag/interest_profiler_local.py` to compute six RIASEC scores and a Holland code.
+2. **Career candidate matching**: `career_rag/ip_career_matcher.py` matches the highest RIASEC interests against `ip_career_listings.json`, filtered by current and future O*NET Job Zones.
+3. **Optional follow-up refinement**: `career_rag/ip_followup_agent.py` asks open-ended questions, optionally uses OpenAI to interpret answers, and `career_rag/ip_refinement_ranker.py` adjusts the ranked career list using preferences, Job Zones, O*NET occupation details, and follow-up text.
+4. **Final report generation**: `career_rag/ip_final_report.py` resolves titles to O*NET-SOC codes, pulls occupation details from DuckDB, retrieves semantic O*NET and AI-impact evidence, builds citations, and saves `ip_final_career_report.json` and `ip_final_career_report.md`. `career_rag/ip_report_ui.py` renders that report in the app.
+
+The app checks required artifacts before RAG-heavy steps. If the DuckDB database, JSONL documents, or Chroma collections are missing, it shows rebuild/restore instructions instead of silently producing weak results.
+
+## RAG Implementation
+
+This project uses retrieval-augmented generation in two related ways:
+
+1. **O*NET occupation RAG**: O*NET SQL tables are imported into DuckDB, transformed into JSONL documents, embedded with SentenceTransformers, and indexed in ChromaDB. Runtime code retrieves occupation sections, full occupation profiles, and supplemental documents for the user's career question or profile.
+2. **AI-impact RAG**: Anthropic Economic Index evidence, NBER-derived evidence, and selected research/methodology chunks are normalized into JSONL rows, embedded, and indexed in separate Chroma collections. Runtime code retrieves these rows for AI exposure, task penetration, methodology, and caveats.
+
+The retrieval flow is:
+
+1. Source data is converted to typed local artifacts: DuckDB tables for structured O*NET data, JSONL files for retrievable text documents, and Chroma persistent collections for vector search.
+2. Queries are formed from either a user question, a resolved occupation, or the Interest Profiler result: RIASEC scores, Holland code, Job Zones, and follow-up answer text.
+3. Queries are embedded with `BAAI/bge-small-en-v1.5`.
+4. Chroma returns nearest-neighbor documents plus metadata such as occupation title, O*NET-SOC code, section, document type, source, task ID, page, metric, and score.
+5. The generator/report builder reranks or filters results by occupation code, title, task match, Job Zone, follow-up term overlap, source type, and evidence confidence.
+6. Retrieved evidence is passed to report templates or OpenAI prompts with strict grounding instructions and citation IDs.
+
+### Models, Technologies, Databases, And Data Types
+
+| Part | Model / Technology | Main data types | Used by |
+| --- | --- | --- | --- |
+| Interest scoring | Deterministic Python scoring | JSON questions, checked activity IDs, integer RIASEC scores, Holland code strings | `interest_profiler_app.py`, `interest_profiler_local.py` |
+| Local occupation database | DuckDB | O*NET SQL-imported relational tables, O*NET-SOC codes, task/skill/knowledge rows | `ip_final_report.py`, `ip_refinement_ranker.py`, `occupation_aliases.py` |
+| O*NET document retrieval | ChromaDB + `BAAI/bge-small-en-v1.5` | JSONL text chunks, Chroma documents, metadata dictionaries, 384-dimensional embeddings | `retriever.py`, `ip_semantic_report.py`, `generator.py` |
+| Research and AI-impact retrieval | ChromaDB + `BAAI/bge-small-en-v1.5` | JSONL evidence rows, claim rows, research chunks, metric fields, source metadata | `ai_impact_retriever.py`, `research_retriever.py`, `ip_ai_impact.py` |
+| LLM query rewriting and generation | OpenAI chat model, default `gpt-4o-mini` via `OPENAI_MODEL` | Chat messages, JSON outputs, grounded report strings | `generator.py`, `ip_followup_agent.py`, parts of `ip_final_report.py` |
+| App UI | Streamlit | Session-state dictionaries, forms, tabs, tables, report JSON | `interest_profiler_app.py`, `ip_report_ui.py` |
+| Build and diagnostics | Python CLI scripts | DuckDB files, JSONL, CSV, PDF/text source files, Chroma stores, zip archive parts | `scripts/` |
+
+Important persistent artifacts:
+
+| Artifact | Type | Role |
+| --- | --- | --- |
+| `data/duckdb/onet.duckdb` | DuckDB database | Structured O*NET facts used for occupation details, tasks, aliases, and report grounding. |
+| `data/documents/onet_occupation_documents.jsonl` | JSONL | Full occupation documents for broad retrieval. |
+| `data/documents/onet_occupation_section_documents.jsonl` | JSONL | Section-level occupation chunks for tasks, skills, education, interests, software, and work context retrieval. |
+| `data/documents/onet_supplemental_documents.jsonl` | JSONL | Aliases, related occupations, task-DWA mappings, and content-model linkages. |
+| `data/chroma_onet/` | Chroma persistent DB | `onet_sections`, `onet_full_occupations`, and `onet_supplemental` collections. |
+| `data/processed/ai_impact_evidence_deduped.jsonl` | JSONL | Structured Anthropic/NBER AI-impact evidence rows. |
+| `chroma_ai_impact/` | Chroma persistent DB | `ai_impact_evidence` collection for structured AI-impact retrieval. |
+| `chroma_research/` | Chroma persistent DB | `research_ai_impact_claims` and `research_inference` collections. |
+| `onet_interest_profiler/ip_profile_result.json` | JSON | Saved user profile, scores, Job Zones, matches, and follow-up refinement. |
+| `onet_interest_profiler/ip_final_career_report.json` | JSON | Structured final report rendered by the Streamlit UI. |
+| `onet_interest_profiler/ip_final_career_report.md` | Markdown | Human-readable final report export. |
+
+## Essential Main-Work Files
+
+These are the files that do the core retrieval and inference work:
+
+| File | Why it matters |
+| --- | --- |
+| `interest_profiler_app.py` | Main app orchestrator: collects inputs, triggers scoring, follow-up refinement, artifact checks, report generation, and report rendering. |
+| `career_rag/retriever.py` | Main O*NET vector retriever. It loads the embedding model, connects to Chroma, routes queries across section/full/supplemental collections, applies metadata filters, and returns normalized evidence chunks. |
+| `career_rag/ai_impact_retriever.py` | Main structured AI-impact retriever. It searches `ai_impact_evidence` and prioritizes exact SOC, exact title, task-level evidence, source type, metric availability, and confidence. |
+| `career_rag/research_retriever.py` | Retrieves legacy or supplemental AI-impact research claims from `research_ai_impact_claims`. |
+| `career_rag/generator.py` | General RAG answer generator and CLI. It rewrites queries when OpenAI is available, retrieves O*NET and AI-impact evidence, formats context, calls the LLM, and falls back when needed. |
+| `career_rag/ip_final_report.py` | Final Interest Profiler report builder. It combines profile data, career matches, DuckDB occupation details, semantic retrieval, AI-impact evidence, citations, and optional LLM-written narratives. |
+| `career_rag/ip_semantic_report.py` | Builds the semantic comparison section of the final report by querying O*NET and AI-impact collections from profile/follow-up text. |
+| `career_rag/ip_ai_impact.py` | Builds occupation-specific AI-impact sections from local evidence, especially exact O*NET task rows when available. |
+| `career_rag/ip_followup_agent.py` | Generates and interprets open-ended follow-up questions, using deterministic fallback logic or OpenAI JSON output. |
+| `career_rag/ip_refinement_ranker.py` | Converts follow-up answers into structured preferences and reranks candidate careers using local O*NET evidence. |
+
+For rebuilding the RAG indexes, the most important scripts are:
+
+| Script | Main output |
+| --- | --- |
+| `scripts/onet/import_onet.py` | `data/duckdb/onet.duckdb` |
+| `scripts/onet/generate_onet_documents.py` | Full and section-level O*NET JSONL documents |
+| `scripts/onet/generate_onet_supplemental_documents.py` | Supplemental O*NET JSONL documents |
+| `scripts/onet/embed_onet_documents.py` | Chroma `onet_sections` collection |
+| `scripts/onet/embed_onet_full_documents.py` | Chroma `onet_full_occupations` collection |
+| `scripts/onet/embed_onet_supplemental_documents.py` | Chroma `onet_supplemental` collection |
+| `scripts/ai_impact/merge_ai_impact_evidence.py` | Deduplicated structured AI-impact JSONL |
+| `scripts/ai_impact/embed_ai_impact_evidence.py` | Chroma `ai_impact_evidence` and research-inference collections |
+| `scripts/research/embed_ai_impact_claims.py` | Chroma `research_ai_impact_claims` collection |
+| `scripts/build_all_artifacts.py` | End-to-end local artifact rebuild |
+| `scripts/check_artifacts.py` | Artifact and retrieval smoke test |
+
 ## Compact Structure
 
 ```text
 career-rag/
+  README.md                       Project setup, architecture, scripts, and references
+  requirements.txt                Python package dependencies
+  .env.example                    Environment variable template
   interest_profiler_app.py        Streamlit entrypoint
   career_rag/                     Runtime package used by the app and generator
   scripts/

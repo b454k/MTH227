@@ -484,11 +484,6 @@ def _render_final_report_section(result: dict[str, Any]) -> None:
 def _report_uses_current_future_grouping(report: dict[str, Any]) -> bool:
     if report.get("top_match_grouping") != "current_zone_5_future_zone_5":
         return False
-    future_impact = report.get("future_impact_summary") or {}
-    if report.get("future_impact_method") != "semantic_research_rag":
-        return False
-    if future_impact.get("method") != "semantic_research_rag":
-        return False
     semantic_report = report.get("semantic_retrieval_report") or {}
     if report.get("semantic_report_method") != "semantic_onet_ai_impact_report":
         return False
