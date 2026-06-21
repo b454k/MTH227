@@ -1,23 +1,25 @@
 # Career RAG
 
-Install dependencies and run the Streamlit app from the project root:
+Install dependencies, restore/check local RAG artifacts, and run the Streamlit app from the project root:
 
 ```powershell
 python -m pip install -r requirements.txt
+python scripts\archives\restore_data_archives.py
+python scripts\check_artifacts.py
 python -m streamlit run interest_profiler_app.py
 ```
 
-If this is a fresh clone, restore the bundled local data first:
+If artifacts are missing and you have raw/local data available, rebuild them:
 
 ```powershell
-python scripts\archives\restore_data_archives.py
+python scripts\build_all_artifacts.py
 ```
 
 ## Project Overview
 
 Career RAG is a local career-guidance application built for an Applied NLP workflow. It combines the O*NET Interest Profiler, O*NET occupation data, vector retrieval, and AI labor-market evidence to help a user move from interests to grounded career recommendations.
 
-The final app is `interest_profiler_app.py`. It asks the O*NET Interest Profiler short-form questions, computes RIASEC scores, lets the user choose current and future Job Zones, optionally asks follow-up questions, ranks matching careers, and generates a cited final career report. The report uses local O*NET evidence from DuckDB and AI-impact evidence from local JSONL/Chroma artifacts when available.
+The final app is `interest_profiler_app.py`. It asks the O*NET Interest Profiler short-form questions, computes RIASEC scores, lets the user choose current and future Job Zones, optionally asks follow-up questions, ranks matching careers, and generates a cited final career report. Follow-up ranking and report generation require local O*NET DuckDB, JSONL, Chroma, and AI-impact evidence artifacts; if they are missing, the app stops and shows rebuild instructions.
 
 The project can run without an OpenAI key for deterministic scoring and template fallback behavior. LLM-powered follow-up interpretation, claim extraction, and richer report text require `OPENAI_API_KEY` in `.env`.
 
@@ -32,6 +34,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 python scripts\archives\restore_data_archives.py
+python scripts\check_artifacts.py
 python -m streamlit run interest_profiler_app.py
 ```
 
@@ -48,6 +51,69 @@ python -m streamlit run interest_profiler_app.py
 ```
 
 Keep `.env` local. Do not commit API keys or machine-specific paths.
+
+## Fresh Clone Setup
+
+Windows PowerShell:
+
+```powershell
+git clone <repo-url>
+cd career-rag
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+notepad .env
+python scripts\archives\restore_data_archives.py
+python scripts\check_artifacts.py
+python -m streamlit run interest_profiler_app.py
+```
+
+Fill `HF_TOKEN` in `.env` before running retrieval smoke tests or rebuilding Chroma collections. Fill `OPENAI_API_KEY` only if you want LLM-powered follow-up interpretation or research-claim extraction.
+
+If the split archive bundle is not available, place the raw O*NET SQL dump under `onet_sql/`, place/download research and Anthropic source files under `data/`, then run:
+
+```powershell
+python scripts\build_all_artifacts.py
+python scripts\check_artifacts.py
+```
+
+For a quick path/count-only check that does not load the embedding model:
+
+```powershell
+python scripts\check_artifacts.py --skip-retrieval
+```
+
+Expected behavior after a clone is explicit: the app either works with restored artifacts, or it shows `RAG artifacts missing. Please run the setup/build command.` with the exact missing files/folders.
+
+## Artifact Policy
+
+Generated DuckDB files, JSONL documents, Chroma stores, downloaded research files, profile results, final reports, caches, and logs are ignored by git. The repo includes `data_archives/` split zip parts so teammates can restore the large local runtime layout without committing uncompressed generated data.
+
+Versioned artifact bundle:
+
+```powershell
+python scripts\archives\restore_data_archives.py
+```
+
+Rebuild from source/local inputs:
+
+```powershell
+python scripts\build_all_artifacts.py
+```
+
+If the archive parts become too large for normal GitHub storage, move them to Git LFS or a downloadable release zip and keep `data_archives/manifest.json` plus restore instructions updated.
+
+## Troubleshooting Missing RAG Artifacts
+
+- Missing `data/duckdb/onet.duckdb`: run `python scripts\archives\restore_data_archives.py`, or rebuild with `python scripts\build_all_artifacts.py` after placing O*NET SQL files in `onet_sql/`.
+- Missing `data/documents/*.jsonl`: run `python scripts\onet\generate_onet_documents.py` and `python scripts\onet\generate_onet_supplemental_documents.py`.
+- Missing or empty `data/chroma_onet/`: run the three O*NET embedding scripts or `python scripts\build_all_artifacts.py`.
+- Missing `data/processed/ai_impact_evidence_deduped.jsonl`: restore archives or run the structured AI-impact build steps.
+- Missing or empty `chroma_research/` or `chroma_ai_impact/`: restore archives or rerun the AI-impact/research embedding scripts.
+- `HF_TOKEN is missing`: add it to `.env` before embedding or running retrieval smoke tests.
+- Follow-up results look identical to initial matches: open `Debug: RAG artifacts` in the app and run `python scripts\check_artifacts.py`; the app now warns when follow-up answers exist but the refined order does not change.
 
 ## What The App Does
 
@@ -90,6 +156,7 @@ career-rag/
 | `interest_profiler_app.py` | Streamlit UI for the local O*NET Interest Profiler and final report workflow. |
 | `career_rag/__init__.py` | Package exports for reusable O*NET retrieval helpers. |
 | `career_rag/config.py` | Shared project paths, environment loading, and embedding-model configuration. |
+| `career_rag/artifacts.py` | Central artifact validation, Chroma count inspection, and missing-artifact messages. |
 | `career_rag/interest_profiler_local.py` | Local O*NET Interest Profiler scoring, profile JSON creation, and RIASEC helper logic. |
 | `career_rag/ip_career_matcher.py` | Local career matching for Interest Profiler scores and Job Zones. |
 | `career_rag/ip_followup_agent.py` | Optional follow-up question planning and refinement for ambiguous or personalized profiles. |
@@ -172,6 +239,8 @@ If LLM extraction is unavailable, run NBER extraction without `--use-llm`.
 | Script | Purpose |
 | --- | --- |
 | `scripts/diagnostics/rag_diagnostics.py` | Read-only diagnostics for DuckDB tables, documents, Chroma retrieval, and combined retrieval outputs. |
+| `scripts/check_artifacts.py` | Verifies required paths, Chroma collection counts, sample retrieval, and follow-up ranking. |
+| `scripts/build_all_artifacts.py` | Runs the O*NET, AI-impact, Chroma, and smoke-test build steps in order. |
 | `scripts/archives/restore_data_archives.py` | Restores ignored local runtime data from split zip parts in `data_archives/`. |
 | `scripts/archives/package_data_archives.py` | Packages generated local data into GitHub-friendly split zip archives. |
 
@@ -182,6 +251,7 @@ python scripts\diagnostics\rag_diagnostics.py tables
 python scripts\diagnostics\rag_diagnostics.py documents
 python scripts\diagnostics\rag_diagnostics.py combined-retrieval "How will AI affect office support workers?"
 python scripts\diagnostics\rag_diagnostics.py research "AI impact on programmers"
+python scripts\check_artifacts.py
 ```
 
 ## Data And Evidence

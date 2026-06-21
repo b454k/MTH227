@@ -9,12 +9,12 @@ re-embed research documents.
 from __future__ import annotations
 
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
 try:
     from career_rag.config import (
         BGE_QUERY_PREFIX,
+        CHROMA_RESEARCH_DIR,
         EMBEDDING_MODEL_NAME,
         quiet_huggingface_model_load,
         require_hf_token,
@@ -23,14 +23,14 @@ try:
 except ImportError:  # Allows: py career_rag/research_retriever.py
     from config import (  # type: ignore
         BGE_QUERY_PREFIX,
+        CHROMA_RESEARCH_DIR,
         EMBEDDING_MODEL_NAME,
         quiet_huggingface_model_load,
         require_hf_token,
         validate_collection_embedding_model,
     )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PERSIST_DIR = PROJECT_ROOT / "chroma_research"
+DEFAULT_PERSIST_DIR = CHROMA_RESEARCH_DIR
 DEFAULT_COLLECTION = "research_ai_impact_claims"
 DEFAULT_MODEL = EMBEDDING_MODEL_NAME
 

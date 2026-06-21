@@ -295,28 +295,9 @@ def update_profile_with_followup(
     updated["refined_interests"] = updated["final_top_interests"]
     updated["final_code"] = updated["final_holland_code"]
 
-    try:
-        from career_rag.ip_refinement_ranker import build_refined_career_recommendations
+    from career_rag.ip_refinement_ranker import build_refined_career_recommendations
 
-        ranking_update = build_refined_career_recommendations(updated, followup_refinement)
-    except Exception as exc:
-        initial_ranked_matches = _flatten_career_match_records(updated.get("career_matches") or {})
-        ranking_update = {
-            "preferences_used": list(final_refinement.get("key_sub_preferences") or []),
-            "refined_career_matches": initial_ranked_matches,
-            "final_ranked_matches": initial_ranked_matches,
-            "refinement_debug": {
-                "initial_code": updated.get("initial_code") or updated.get("initial_holland_code"),
-                "final_code": updated.get("final_code") or updated.get("final_holland_code"),
-                "followup_refinement": followup_refinement,
-                "preferences_used": list(final_refinement.get("key_sub_preferences") or []),
-                "top_10_initial_matches": _debug_match_rows(initial_ranked_matches[:10]),
-                "top_10_refined_matches": _debug_match_rows(initial_ranked_matches[:10]),
-                "score_components": [],
-                "validation_warnings": [f"Refined ranking failed: {exc}"],
-            },
-            "validation_warnings": [f"Refined ranking failed: {exc}"],
-        }
+    ranking_update = build_refined_career_recommendations(updated, followup_refinement)
 
     updated["preferences_used"] = ranking_update.get("preferences_used", [])
     updated["refined_career_matches"] = ranking_update.get("refined_career_matches", [])

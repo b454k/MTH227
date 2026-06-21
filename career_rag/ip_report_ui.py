@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from typing import Any
 
 import streamlit as st
@@ -39,6 +40,8 @@ def render_final_career_report(report: dict[str, Any]) -> None:
             "Summary",
             "Top Matches",
             "Alternatives",
+            "Future Impact",
+            "Semantic Report",
             "Sources",
         ]
     )
@@ -50,46 +53,63 @@ def render_final_career_report(report: dict[str, Any]) -> None:
     with tabs[2]:
         _render_alternatives(report)
     with tabs[3]:
+        _render_future_impact(report)
+    with tabs[4]:
+        _render_semantic_report(report)
+    with tabs[5]:
         _render_sources(report)
 
 
 def _render_summary(report: dict[str, Any]) -> None:
     profile = report.get("profile_used") or {}
     st.subheader("Profile Summary")
-    scores = profile.get("riasec_scores") or {}
-    if scores:
-        st.dataframe(
-            [{"Interest Area": key, "Score": value} for key, value in scores.items()],
-            hide_index=True,
-            use_container_width=True,
-        )
 
-    cols = st.columns(4)
-    cols[0].metric("Initial Code", profile.get("initial_holland_code", ""))
-    cols[1].metric("Final Code", profile.get("final_holland_code", ""))
-    cols[2].metric("Current Zone", _job_zone_title(profile.get("current_job_zone")))
-    cols[3].metric("Future Zone", _job_zone_title(profile.get("future_job_zone")))
+    top_interests = profile.get("final_top_interests") or profile.get("top_interests") or []
+    if top_interests:
+        st.caption("Top interests")
+        st.write(", ".join(str(item) for item in top_interests[:3]))
+
+    cols = st.columns(3)
+    cols[0].caption("Final code")
+    cols[0].write(f"**{profile.get('final_holland_code', '')}**")
+    cols[1].caption("Current zone")
+    cols[1].write(_job_zone_title(profile.get("current_job_zone")))
+    cols[2].caption("Future zone")
+    cols[2].write(_job_zone_title(profile.get("future_job_zone")))
 
     preferences = profile.get("sub_preferences") or []
     if preferences:
-        st.write("Preferences used for matching: " + ", ".join(preferences))
+        st.markdown("**Preferences Used For Matching**")
+        _render_grouped_preferences(preferences)
     if profile.get("career_matching_guidance"):
         st.caption(profile["career_matching_guidance"])
 
 
 def _render_top_matches(report: dict[str, Any]) -> None:
     st.subheader("Top Career Matches")
-    for match in report.get("top_matches") or []:
-        with st.container(border=True):
-            cols = st.columns([3, 1])
-            cols[0].markdown(f"**{match.get('rank')}. {_match_title(match)}**")
-            cols[1].metric("Fit", match.get("fit_label") or match.get("fit_score"))
-            if match.get("resolution_note"):
-                st.caption(match["resolution_note"])
-            _write_bullets(match.get("why_it_fits") or [])
+    matches = report.get("top_matches") or []
+    st.caption(
+        "This report shows up to five careers for your current Job Zone and up to five "
+        "careers for the future Job Zone you are willing to work toward."
+    )
+    shared_reasons = _shared_match_reasons(matches)
+    if shared_reasons:
+        st.markdown("**Why these careers surfaced**")
+        _write_bullets(shared_reasons)
 
-            with st.expander("Job detail card"):
-                _render_job_detail(match)
+    for group_label, group_matches in _group_top_matches(matches):
+        if group_label:
+            st.markdown(f"**{group_label}**")
+        for match in group_matches:
+            with st.container(border=True):
+                cols = st.columns([3, 1])
+                cols[0].markdown(f"**{match.get('rank')}. {_match_title(match)}**")
+                cols[1].metric("Fit", match.get("fit_label") or match.get("fit_score"))
+                if match.get("resolution_note"):
+                    st.caption(match["resolution_note"])
+
+                with st.expander("Job detail card"):
+                    _render_job_detail(match)
 
 
 def _render_job_detail(match: dict[str, Any]) -> None:
@@ -108,26 +128,20 @@ def _render_job_detail(match: dict[str, Any]) -> None:
     _render_key_skills(match)
 
     st.markdown("**Education / Job Zone**")
-    job_zone = details.get("job_zone") or {}
-    if job_zone:
-        st.write(_job_zone_detail(job_zone))
-    education = match.get("education_needed") or ""
-    if education:
-        st.write(_without_citations(education))
-    _write_source_indexes([job_zone, education, details.get("education") or []])
+    _render_education_job_zone(match)
 
     st.markdown("**AI Impact Breakdown**")
     _render_ai_table(match)
     ai_summary = match.get("ai_impact", {}).get("future_outlook_summary") or ""
     if ai_summary:
-        st.markdown("**Inference**")
+        st.markdown("**Future Outlook**")
         st.info(_without_citations(ai_summary))
         _write_source_indexes(ai_summary)
 
     st.markdown("**Day In The Life**")
     day_text = match.get("day_in_the_life") or ""
     if day_text:
-        st.info(_without_citations(day_text))
+        st.info(_clean_day_text(day_text))
         _write_source_indexes([day_text, details.get("tasks") or [], details.get("work_context") or []])
 
 
@@ -139,7 +153,6 @@ def _render_ai_table(match: dict[str, Any]) -> None:
             score = "N/A" if item.get("score") is None else item.get("score")
         rows.append(
             {
-                "O*NET task ID": item.get("onet_task_id"),
                 "Task": item.get("task"),
                 "AI exposure signal": item.get("automation_level"),
                 "Score": score,
@@ -147,7 +160,12 @@ def _render_ai_table(match: dict[str, Any]) -> None:
             }
         )
     if rows:
-        st.dataframe(rows, hide_index=True, use_container_width=True)
+        _render_wrapped_table(rows)
+        st.caption(
+            "AI exposure signal is a plain-language level from the local task evidence. "
+            "Score is the underlying dataset value when available; N/A means no exact "
+            "local task match, not zero AI impact."
+        )
     else:
         st.info("No AI impact rows were available for this occupation.")
 
@@ -158,13 +176,146 @@ def _render_alternatives(report: dict[str, Any]) -> None:
     if not alternatives:
         st.info("No alternatives were resolved from local O*NET evidence.")
         return
+    source_map = _source_map(report)
     for item in alternatives[:5]:
         zone = _job_zone_title((item.get("job_zone") or {}).get("zone"))
-        st.markdown(f"**{item.get('title')} ({zone})**")
-        if item.get("resolved_onet_title") and item.get("resolved_onet_title") != item.get("title"):
-            st.caption(f"O*NET evidence: {item.get('resolved_onet_title')}")
-        st.write(_without_citations(item.get("reason") or ""))
-        _write_source_indexes(item.get("reason") or "")
+        source_links = _source_links(item, source_map)
+        suffix = f" {source_links}" if source_links else ""
+        st.markdown(f"- **{item.get('title')}** - {zone}{suffix}")
+
+
+def _render_future_impact(report: dict[str, Any]) -> None:
+    st.subheader("Future Impact")
+    section = report.get("future_impact_summary") or {}
+    if not section:
+        st.info("Generate a new final report to add the semantic research impact summary.")
+        return
+
+    status = section.get("status")
+    summary = section.get("summary") or ""
+    if status != "ok":
+        st.info(_without_citations(summary) or "Semantic research retrieval did not return a summary.")
+        if section.get("error"):
+            st.caption(str(section["error"]))
+        return
+
+    st.caption(
+        "This section is retrieved semantically from the extracted AI-impact research papers "
+        "using the final profile and recommended careers as the query."
+    )
+    if summary:
+        st.info(_without_citations(summary))
+        _write_source_indexes(summary)
+
+    takeaways = section.get("takeaways") or []
+    if takeaways:
+        st.markdown("**What this means for planning**")
+        for item in takeaways:
+            st.write(f"- {_without_citations(item)}")
+        _write_source_indexes(takeaways)
+
+    retrieved = section.get("retrieved_research") or []
+    if retrieved:
+        with st.expander("Retrieved research evidence", expanded=False):
+            rows = []
+            source_map = _source_map(report)
+            for item in retrieved:
+                source_id = item.get("source_id")
+                title = item.get("title") or "Research source"
+                page = f", page {item.get('page')}" if item.get("page") else ""
+                source = source_map.get(int(source_id or 0), {})
+                source_label = f"[{source_id}]"
+                if source.get("url"):
+                    source_label = f"[[{source_id}]]({source['url']})"
+                rows.append(
+                    {
+                        "Source": source_label,
+                        "Paper": f"{title}{page}",
+                        "Retrieved passage": item.get("snippet") or "",
+                    }
+                )
+            _render_wrapped_table(rows)
+
+
+def _render_semantic_report(report: dict[str, Any]) -> None:
+    st.subheader("Semantic Retrieval Report")
+    section = report.get("semantic_retrieval_report") or {}
+    if not section:
+        st.info("Generate a new final report to add the semantic O*NET and AI-impact comparison.")
+        return
+
+    st.caption(
+        "This comparison uses the final profile as a semantic query over O*NET and "
+        "AI-impact vector indexes. It is separate from the scoring-based top matches."
+    )
+
+    summary = section.get("summary") or ""
+    if section.get("status") != "ok":
+        st.info(_without_citations(summary) or "Semantic O*NET/AI-impact retrieval did not return enough evidence.")
+        errors = section.get("errors") or {}
+        for label, error in errors.items():
+            if error:
+                st.caption(f"{label}: {error}")
+        return
+
+    if summary:
+        st.info(_without_citations(summary))
+        _write_source_indexes(summary)
+
+    takeaways = section.get("takeaways") or []
+    if takeaways:
+        st.markdown("**Comparison Notes**")
+        for item in takeaways:
+            st.write(f"- {_without_citations(item)}")
+        _write_source_indexes(takeaways)
+
+    signals = section.get("semantic_career_signals") or []
+    if signals:
+        st.markdown("**Careers Surfaced By Semantic Retrieval**")
+        rows = []
+        for item in signals:
+            rows.append(
+                {
+                    "Career": item.get("title") or "",
+                    "O*NET-SOC": item.get("soc_code") or "",
+                    "Semantic signal": item.get("semantic_signal") or "",
+                    "Sources": _format_source_ids(item.get("source_ids") or []),
+                }
+            )
+        _render_wrapped_table(rows)
+
+    onet_rows = section.get("retrieved_onet") or []
+    if onet_rows:
+        with st.expander("Retrieved O*NET evidence", expanded=False):
+            _render_wrapped_table(
+                [
+                    {
+                        "Source": f"[{item.get('source_id')}]",
+                        "Career / section": " - ".join(
+                            part for part in [item.get("title"), item.get("section")] if part
+                        ),
+                        "Retrieved passage": item.get("snippet") or "",
+                    }
+                    for item in onet_rows
+                ]
+            )
+
+    ai_rows = section.get("retrieved_ai_impact") or []
+    if ai_rows:
+        with st.expander("Retrieved AI-impact evidence", expanded=False):
+            _render_wrapped_table(
+                [
+                    {
+                        "Source": f"[{item.get('source_id')}]",
+                        "Occupation / signal": " - ".join(
+                            part for part in [item.get("occupation"), item.get("impact_type")] if part
+                        ),
+                        "Task": item.get("task") or "",
+                        "Retrieved passage": item.get("snippet") or "",
+                    }
+                    for item in ai_rows
+                ]
+            )
 
 
 def _render_sources(report: dict[str, Any]) -> None:
@@ -172,13 +323,45 @@ def _render_sources(report: dict[str, Any]) -> None:
     with st.expander("View numbered citations", expanded=True):
         for source in report.get("sources") or []:
             label = f"[{source.get('id')}] {source.get('title')}"
-            st.markdown(f"**{label}**")
+            if source.get("url"):
+                st.markdown(f"**[{label}]({source['url']})**")
+            else:
+                st.markdown(f"**{label}**")
             if source.get("retrieved_section"):
                 st.write(source["retrieved_section"])
             if source.get("note"):
                 st.caption(source["note"])
             if source.get("url"):
                 st.write(source["url"])
+
+
+def _render_wrapped_table(rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        return
+    columns = list(rows[0])
+    header = "".join(f"<th>{escape(str(column))}</th>" for column in columns)
+    body_rows = []
+    for row in rows:
+        cells = "".join(
+            f"<td>{escape(str(row.get(column) or ''))}</td>"
+            for column in columns
+        )
+        body_rows.append(f"<tr>{cells}</tr>")
+    st.markdown(
+        (
+            "<style>"
+            ".wrapped-report-table{width:100%;border-collapse:collapse;font-size:0.92rem;}"
+            ".wrapped-report-table th,.wrapped-report-table td{"
+            "border:1px solid rgba(49,51,63,.2);padding:0.55rem;vertical-align:top;"
+            "white-space:normal;word-break:break-word;overflow-wrap:anywhere;}"
+            ".wrapped-report-table th{background:rgba(240,242,246,.75);font-weight:600;}"
+            ".wrapped-report-table td:nth-child(1){min-width:18rem;}"
+            "</style>"
+            f"<table class='wrapped-report-table'><thead><tr>{header}</tr></thead>"
+            f"<tbody>{''.join(body_rows)}</tbody></table>"
+        ),
+        unsafe_allow_html=True,
+    )
 
 
 def _write_bullets(items: list[Any]) -> None:
@@ -212,6 +395,61 @@ def _render_key_skills(match: dict[str, Any]) -> None:
         _write_source_indexes(values)
     if not rendered_any:
         st.write("No local evidence was retrieved for this section.")
+
+
+def _render_grouped_preferences(preferences: list[Any]) -> None:
+    grouped = _group_preferences(preferences)
+    for label, values in grouped.items():
+        if not values:
+            continue
+        st.caption(label)
+        st.markdown(_skill_chip_html(values), unsafe_allow_html=True)
+
+
+def _group_preferences(preferences: list[Any]) -> dict[str, list[str]]:
+    groups = {
+        "Tasks and tools": [],
+        "Work style": [],
+        "People and setting": [],
+        "Career direction": [],
+        "Other": [],
+    }
+    for preference in _dedupe_text(preferences):
+        key = preference.lower()
+        if any(term in key for term in ("technology", "data", "math", "analyt", "problem", "research", "ai")):
+            groups["Tasks and tools"].append(preference)
+        elif any(term in key for term in ("fast", "pace", "structured", "independent", "autonomy", "schedule")):
+            groups["Work style"].append(preference)
+        elif any(term in key for term in ("social", "people", "teaching", "guiding", "listening", "interaction")):
+            groups["People and setting"].append(preference)
+        elif any(term in key for term in ("own", "leading", "career", "consult", "security", "impact")):
+            groups["Career direction"].append(preference)
+        else:
+            groups["Other"].append(preference)
+    return groups
+
+
+def _render_education_job_zone(match: dict[str, Any]) -> None:
+    details = match.get("onet_details") or {}
+    job_zone = details.get("job_zone") or {}
+    education = _dedupe_text(details.get("education") or [])
+    education_entries = _education_entries(education)
+
+    prep_summary = _education_preparation_summary(job_zone, education_entries)
+    if prep_summary:
+        st.write("Typical preparation: " + prep_summary)
+
+    training = _clean_job_zone_training(job_zone.get("training"))
+    if training:
+        st.write("Experience and training: " + training)
+
+    if education:
+        st.caption("O*NET education responses")
+        _write_bullets([_format_education_entry(item) for item in education_entries])
+
+    if not education and not prep_summary and not training:
+        st.write("No local education or Job Zone evidence was retrieved for this section.")
+    _write_source_indexes([job_zone, education])
 
 
 def _fallback_key_skills(details: dict[str, Any]) -> dict[str, list[str]]:
@@ -280,6 +518,152 @@ def _job_zone_title(zone: Any) -> str:
     return f"Job Zone {zone_int} ({explanation})"
 
 
+def _group_top_matches(matches: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
+    groups: list[tuple[str, list[dict[str, Any]]]] = []
+    seen_labels: set[str] = set()
+    for match in matches:
+        label = str(match.get("match_group") or "").strip()
+        if label in seen_labels:
+            continue
+        seen_labels.add(label)
+        groups.append((label, [item for item in matches if str(item.get("match_group") or "").strip() == label]))
+    if groups:
+        return groups
+    return [("", matches)]
+
+
+def _shared_match_reasons(matches: list[dict[str, Any]]) -> list[str]:
+    reasons: list[Any] = []
+    for match in matches:
+        reasons.extend(match.get("why_it_fits") or [])
+    return _dedupe_text(_normalize_shared_reason(_without_citations(reason)) for reason in reasons)[:4]
+
+
+def _normalize_shared_reason(value: Any) -> str:
+    text = str(value or "").strip()
+    return re.sub(r"^This role is\b", "These roles are", text, flags=re.IGNORECASE)
+
+
+def _clean_day_text(value: Any) -> str:
+    text = _without_citations(value)
+    return re.sub(r"^my inference:\s*", "", text, flags=re.IGNORECASE).strip()
+
+
+def _education_entries(values: list[Any]) -> list[dict[str, Any]]:
+    entries = [_parse_education_entry(value) for value in values]
+    return [entry for entry in entries if entry.get("label") or entry.get("text")]
+
+
+def _parse_education_entry(value: Any) -> dict[str, Any]:
+    text = _without_citations(value)
+    match = re.match(r"^(?P<label>.+?)\s*\((?P<number>\d+(?:\.\d+)?)%?\)$", text)
+    if not match:
+        return {"label": text, "percent": None, "text": text}
+    number = float(match.group("number"))
+    label = match.group("label").strip()
+    return {"label": label, "percent": number, "text": f"{label} ({number:g}%)"}
+
+
+def _format_education_entry(entry: dict[str, Any]) -> str:
+    return str(entry.get("text") or entry.get("label") or "")
+
+
+def _education_preparation_summary(
+    job_zone: dict[str, Any],
+    education_entries: list[dict[str, Any]],
+) -> str:
+    entries_with_percent = [
+        entry for entry in education_entries if isinstance(entry.get("percent"), (int, float))
+    ]
+    if entries_with_percent:
+        sorted_entries = sorted(
+            entries_with_percent,
+            key=lambda entry: float(entry.get("percent") or 0),
+            reverse=True,
+        )
+        positive_entries = [
+            entry for entry in sorted_entries if float(entry.get("percent") or 0) > 0
+        ]
+        if positive_entries:
+            return _plain_education_summary(positive_entries)
+
+    fallback = _clean_job_zone_education(job_zone.get("education"))
+    return fallback
+
+
+def _is_bachelors_or_higher(label: Any) -> bool:
+    text = str(label or "").lower()
+    return any(term in text for term in ("bachelor", "master", "doctoral", "professional degree"))
+
+
+def _plain_education_summary(entries: list[dict[str, Any]]) -> str:
+    top = entries[0]
+    top_level = _degree_level(top.get("label"))
+    bachelor_entry = next((entry for entry in entries if _degree_level(entry.get("label")) == "bachelor"), None)
+    master_entry = next((entry for entry in entries if _degree_level(entry.get("label")) == "master"), None)
+
+    if top_level == "master":
+        if bachelor_entry:
+            return (
+                "Most O*NET responses point to a master's degree for this role; "
+                "bachelor's-degree paths are present but less common."
+            )
+        return "Most O*NET responses point to a master's degree for this role."
+    if top_level == "bachelor":
+        if master_entry:
+            return (
+                "Most O*NET responses point to a bachelor's degree; "
+                "master's-level preparation is also common."
+            )
+        return "Most O*NET responses point to a bachelor's degree for this role."
+    if top_level == "doctoral":
+        return "Most O*NET responses point to doctoral or professional-degree preparation for this role."
+    if top_level == "associate":
+        return "Most O*NET responses point to associate-degree or vocational preparation for this role."
+    if top_level == "high_school":
+        return "Most O*NET responses point to high-school-level preparation for this role."
+
+    label = _without_citations(top.get("label"))
+    if label:
+        return f"Most O*NET responses point to {label.lower()} for this role."
+    return ""
+
+
+def _degree_level(label: Any) -> str:
+    text = str(label or "").lower()
+    if "master" in text:
+        return "master"
+    if "bachelor" in text:
+        return "bachelor"
+    if "doctoral" in text or "professional degree" in text:
+        return "doctoral"
+    if "associate" in text or "2-year" in text:
+        return "associate"
+    if "high school" in text or "ged" in text:
+        return "high_school"
+    return "other"
+
+
+def _clean_job_zone_education(value: Any) -> str:
+    text = _without_citations(value)
+    text = re.sub(r",?\s*but some do not\.?", ".", text, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _clean_job_zone_training(value: Any) -> str:
+    text = _without_citations(value)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _join_natural(values: Any) -> str:
+    items = [str(value).strip() for value in values if str(value).strip()]
+    if not items:
+        return ""
+    if len(items) == 1:
+        return items[0]
+    return f"{', '.join(items[:-1])} and {items[-1]}"
+
+
 def _without_citations(value: Any) -> str:
     text = re.sub(r"\s+", " ", str(value or "")).strip()
     text = re.sub(r"\s*\[\d+\]", "", text)
@@ -312,7 +696,7 @@ def _citation_numbers(value: Any) -> list[int]:
 def _write_source_indexes(value: Any) -> None:
     numbers = _citation_numbers(value)
     if numbers:
-        st.caption("Source indexes: " + " ".join(f"[{number}]" for number in numbers))
+        st.caption(" ".join(f"[{number}]" for number in numbers))
 
 
 def _format_source_ids(values: list[Any]) -> str:
@@ -324,6 +708,44 @@ def _format_source_ids(values: list[Any]) -> str:
             continue
         ids.append(f"[{source_id}]")
     return " ".join(ids)
+
+
+def _source_map(report: dict[str, Any]) -> dict[int, dict[str, Any]]:
+    sources: dict[int, dict[str, Any]] = {}
+    for source in report.get("sources") or []:
+        try:
+            source_id = int(source.get("id"))
+        except (TypeError, ValueError):
+            continue
+        sources[source_id] = source
+    return sources
+
+
+def _source_links(item: dict[str, Any], sources: dict[int, dict[str, Any]]) -> str:
+    links = []
+    for number in _citation_numbers(item):
+        source = sources.get(number) or {}
+        url = source.get("url")
+        if url:
+            links.append(f"[[{number}]]({url})")
+        else:
+            links.append(f"[{number}]")
+    return " ".join(links)
+
+
+def _dedupe_text(values: Any) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        text = re.sub(r"\s+", " ", str(value or "")).strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(text)
+    return result
 
 
 def _skill_key(value: Any) -> str:

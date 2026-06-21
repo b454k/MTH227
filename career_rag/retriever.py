@@ -14,6 +14,7 @@ from typing import Any
 try:
     from career_rag.config import (
         EMBEDDING_MODEL_NAME,
+        CHROMA_ONET_DIR,
         quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
@@ -22,6 +23,7 @@ try:
 except ImportError:  # Allows: py career_rag/retriever.py
     from config import (  # type: ignore
         EMBEDDING_MODEL_NAME,
+        CHROMA_ONET_DIR,
         quiet_huggingface_model_load,
         require_configured_embedding_model,
         require_hf_token,
@@ -29,7 +31,7 @@ except ImportError:  # Allows: py career_rag/retriever.py
     )
 
 MODEL_NAME = EMBEDDING_MODEL_NAME
-CHROMA_DB_PATH = "data/chroma_onet"
+CHROMA_DB_PATH = str(CHROMA_ONET_DIR)
 
 SECTION_COLLECTION_NAME = "onet_sections"
 FULL_COLLECTION_NAME = "onet_full_occupations"

@@ -9,35 +9,37 @@ from typing import Any
 
 try:
     from career_rag.config import (
+        CHROMA_AI_IMPACT_DIR,
+        CHROMA_RESEARCH_DIR,
         EMBEDDING_MODEL_NAME,
         quiet_huggingface_model_load,
         require_hf_token,
         validate_collection_embedding_model,
     )
     from career_rag.ai_exposure_utils import (
-        PROJECT_ROOT,
         normalize_soc_code,
         normalize_text,
         one_line,
     )
 except ImportError:  # Allows: py career_rag/ai_impact_retriever.py
     from config import (  # type: ignore
+        CHROMA_AI_IMPACT_DIR,
+        CHROMA_RESEARCH_DIR,
         EMBEDDING_MODEL_NAME,
         quiet_huggingface_model_load,
         require_hf_token,
         validate_collection_embedding_model,
     )
     from ai_exposure_utils import (  # type: ignore
-        PROJECT_ROOT,
         normalize_soc_code,
         normalize_text,
         one_line,
     )
 
 
-DEFAULT_AI_PERSIST_DIR = PROJECT_ROOT / "chroma_ai_impact"
+DEFAULT_AI_PERSIST_DIR = CHROMA_AI_IMPACT_DIR
 DEFAULT_AI_COLLECTION = "ai_impact_evidence"
-DEFAULT_RESEARCH_PERSIST_DIR = PROJECT_ROOT / "chroma_research"
+DEFAULT_RESEARCH_PERSIST_DIR = CHROMA_RESEARCH_DIR
 DEFAULT_RESEARCH_COLLECTION = "research_inference"
 DEFAULT_MODEL = EMBEDDING_MODEL_NAME
 

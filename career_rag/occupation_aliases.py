@@ -7,10 +7,10 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
-from career_rag.config import PROJECT_ROOT
+from career_rag.config import ONET_DUCKDB_PATH
 
 
-DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
+DEFAULT_DB_PATH = ONET_DUCKDB_PATH
 
 KNOWN_ALIAS_PREFERENCES = {
     "data analyst": [

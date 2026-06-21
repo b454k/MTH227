@@ -39,6 +39,7 @@ DEFAULT_AI_COLLECTION = "ai_impact_evidence"
 DEFAULT_RESEARCH_CHROMA = PROJECT_ROOT / "chroma_research"
 DEFAULT_RESEARCH_COLLECTION = "research_inference"
 DEFAULT_RESEARCH_INPUTS = [
+    PROJECT_ROOT / "data" / "research" / "research_chunks.jsonl",
     PROJECT_ROOT / "data" / "processed" / "research_inference_chunks.jsonl",
     PROJECT_ROOT / "data" / "processed" / "nber_w31222_method_chunks.jsonl",
 ]
@@ -73,10 +74,17 @@ RESEARCH_METADATA_FIELDS = [
     "doc_type",
     "source_id",
     "source_name",
+    "title",
     "source_url",
+    "url",
+    "final_url",
     "source_file",
+    "local_path",
     "page",
     "source_page",
+    "page_start",
+    "page_end",
+    "section_title",
     "allowed_usage",
     "statistics_allowed",
 ]
@@ -84,7 +92,11 @@ RESEARCH_METADATA_FIELDS = [
 
 def source_page(row: dict[str, Any]) -> Any:
     """Return the best page field."""
-    return row.get("source_page") if row.get("source_page") not in (None, "") else row.get("page")
+    if row.get("source_page") not in (None, ""):
+        return row.get("source_page")
+    if row.get("page") not in (None, ""):
+        return row.get("page")
+    return row.get("page_start")
 
 
 def build_ai_embedding_text(row: dict[str, Any]) -> str:
@@ -110,12 +122,17 @@ def build_ai_embedding_text(row: dict[str, Any]) -> str:
 def build_research_embedding_text(row: dict[str, Any]) -> str:
     """Build embedding text for methodology/caveat chunks."""
     text = row.get("chunk_text") or row.get("evidence_text") or row.get("text") or ""
+    source_name = (
+        one_line(row.get("source_name"))
+        or one_line(row.get("title"))
+        or one_line(row.get("source_id"))
+    )
     return "\n".join(
         [
-            f"Research methodology or caveat: {one_line(text)}",
+            f"AI-impact research passage: {one_line(text)}",
             f"Allowed usage: {one_line(row.get('allowed_usage')) or 'methodology_caveat_inference_only'}",
             f"Statistics allowed: {one_line(row.get('statistics_allowed'))}",
-            f"Source: {one_line(row.get('source_name')) or one_line(row.get('source_id'))}, page {one_line(source_page(row)) or 'N/A'}",
+            f"Source: {source_name}, page {one_line(source_page(row)) or 'N/A'}",
         ]
     )
 
@@ -157,7 +174,7 @@ def load_research_documents(paths: list[Path]) -> tuple[list[str], list[str], li
     for path in paths:
         for row in read_jsonl(path):
             counter += 1
-            doc_id = one_line(row.get("doc_id")) or f"research_inference_{counter:06d}"
+            doc_id = one_line(row.get("doc_id") or row.get("chunk_id")) or f"research_inference_{counter:06d}"
             if doc_id in seen_ids:
                 doc_id = f"{doc_id}_{counter:06d}"
             seen_ids.add(doc_id)

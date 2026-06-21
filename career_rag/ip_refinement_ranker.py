@@ -6,7 +6,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-from career_rag.config import PROJECT_ROOT
+from career_rag.artifacts import ensure_required_artifacts
+from career_rag.config import ONET_DUCKDB_PATH
 from career_rag.interest_profiler_local import (
     RIASEC_INTERESTS,
     canonical_interest,
@@ -14,7 +15,7 @@ from career_rag.interest_profiler_local import (
 from career_rag.occupation_aliases import build_occupation_index, resolve_career_alias
 
 
-DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
+DB_PATH = ONET_DUCKDB_PATH
 RANKED_MATCH_KEYS = [
     "primary_future_zone",
     "primary_current_zone",
@@ -128,6 +129,7 @@ def build_refined_career_recommendations(
             warnings=[],
         )
 
+    ensure_required_artifacts(check_chroma=True)
     target_interests = _target_interests(profile_result, final_refinement)
     target_zone = _target_job_zone(profile_result, final_refinement)
     preference_text = _preference_text(followup_refinement, preferences_used)
@@ -136,10 +138,13 @@ def build_refined_career_recommendations(
     scored_matches = []
     try:
         import duckdb
-    except ImportError:
-        duckdb = None
+    except ImportError as exc:
+        raise RuntimeError("duckdb is required for follow-up RAG ranking.") from exc
 
-    conn = duckdb.connect(str(db_path), read_only=True) if duckdb and Path(db_path).exists() else None
+    if not Path(db_path).exists():
+        raise FileNotFoundError(f"O*NET DuckDB database not found: {db_path}")
+
+    conn = duckdb.connect(str(db_path), read_only=True)
     try:
         for match in initial_matches:
             scored_matches.append(

@@ -51,6 +51,10 @@ data/research/*
 onet_sql/*.sql
 
 # Temporary files from archive packaging
+data_archives/*.zip
 data_archives/*.tmp
 data_archives/*.zip.tmp
 data_archives/_tmp/
+!data_archives/README.md
+!data_archives/manifest.json
+!data_archives/*.zip.part*

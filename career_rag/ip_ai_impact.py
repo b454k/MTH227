@@ -7,14 +7,18 @@ import re
 from functools import lru_cache
 from typing import Any
 
-from career_rag.config import PROJECT_ROOT
+from career_rag.config import (
+    ANTHROPIC_EVIDENCE_PATH,
+    ANTHROPIC_RAW_EVIDENCE_PATH,
+    ONET_DUCKDB_PATH,
+)
 
 
 AI_EVIDENCE_PATHS = [
-    PROJECT_ROOT / "data" / "processed" / "ai_impact_evidence_deduped.jsonl",
-    PROJECT_ROOT / "data" / "processed" / "anthropic_ai_impact.jsonl",
+    ANTHROPIC_EVIDENCE_PATH,
+    ANTHROPIC_RAW_EVIDENCE_PATH,
 ]
-DB_PATH = PROJECT_ROOT / "data" / "duckdb" / "onet.duckdb"
+DB_PATH = ONET_DUCKDB_PATH
 
 AI_TASK_DOC_TYPES = {"ai_task_impact", "ai_task_penetration"}
 AI_TASK_TABLE_LIMIT = 6
