@@ -39,6 +39,18 @@ from career_rag.ip_followup_agent import (
 )
 from career_rag.ip_final_report import build_final_career_report
 from career_rag.ip_report_ui import render_final_career_report
+from career_rag.ui_i18n import (
+    LANGUAGE_BUTTON_LABELS,
+    LANGUAGE_SESSION_KEY,
+    artifact_label,
+    followup_question_text,
+    interest_label,
+    job_zone_label,
+    job_zone_preparation,
+    normalize_language,
+    question_text,
+    ui_text,
+)
 
 
 RESULT_PATH = PROFILE_RESULT_PATH
@@ -111,22 +123,58 @@ def _format_job_zone(zone: int) -> str:
     return f"{zone} - {JOB_ZONE_LABELS[zone]} ({_job_zone_explanation(zone)})"
 
 
-def _job_zone_explanation(zone: Any) -> str:
+def _format_job_zone_for_language(zone: int, language: str) -> str:
+    zone = int(zone)
+    return f"{zone} - {job_zone_label(zone, language)} ({_job_zone_explanation(zone, language)})"
+
+
+def _job_zone_explanation(zone: Any, language: str = "en") -> str:
     try:
         zone_int = int(zone)
     except (TypeError, ValueError):
-        return "preparation level unavailable"
-    return JOB_ZONE_PREPARATION_EXPLANATIONS.get(zone_int, "preparation level unavailable")
+        return ui_text("report.job_zone.preparation_unavailable", language)
+    if normalize_language(language) == "en":
+        return JOB_ZONE_PREPARATION_EXPLANATIONS.get(zone_int, "preparation level unavailable")
+    return job_zone_preparation(zone_int, language)
 
 
-def _render_app_intro() -> None:
-    st.title("AI Aware Career Guide")
-    st.caption(
-        "A personalized career guidance tool that uses O*NET job data, open-ended "
-        "follow-up questions [1] [2], and AI exposure data mainly from Anthropic [3] "
-        "and NBER [4] to recommend careers with context about automation and future impact."
-    )
-    with st.expander("Method references", expanded=False):
+def _current_language() -> str:
+    language = normalize_language(st.session_state.get(LANGUAGE_SESSION_KEY, "en"))
+    st.session_state[LANGUAGE_SESSION_KEY] = language
+    return language
+
+
+def _render_language_switch() -> str:
+    language = _current_language()
+    _, switch_column = st.columns([5, 1.25])
+    with switch_column:
+        st.caption(ui_text("language.label", language))
+        english_column, turkish_column = st.columns(2)
+        with english_column:
+            if st.button(
+                LANGUAGE_BUTTON_LABELS["en"],
+                key="language_switch_en",
+                type="primary" if language == "en" else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state[LANGUAGE_SESSION_KEY] = "en"
+                st.rerun()
+        with turkish_column:
+            if st.button(
+                LANGUAGE_BUTTON_LABELS["tr"],
+                key="language_switch_tr",
+                type="primary" if language == "tr" else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state[LANGUAGE_SESSION_KEY] = "tr"
+                st.rerun()
+    return _current_language()
+
+
+def _render_app_intro(language: str) -> None:
+    st.title(ui_text("app.title", language))
+    st.caption(ui_text("app.caption", language))
+    with st.expander(ui_text("app.method_references", language), expanded=False):
         for source in METHOD_REFERENCES:
             st.markdown(f"[{source['id']}] [{source['label']}]({source['url']})")
 
@@ -211,45 +259,46 @@ def _validate_report_matches_profile(report: dict[str, Any], profile_result: dic
     return errors
 
 
-def _render_initial_form(questions: list[dict[str, Any]], career_listings: list[dict[str, Any]]) -> None:
+def _render_initial_form(
+    questions: list[dict[str, Any]],
+    career_listings: list[dict[str, Any]],
+    language: str,
+) -> None:
     grouped_questions = _group_questions_by_interest(questions)
 
-    st.write(
-        "Check the box by the activities you would like to do. Do not think about "
-        "how much education/training is needed or how much money you will make."
-    )
+    st.write(ui_text("initial.instructions", language))
 
     with st.form("interest_profiler_form"):
-        st.header("60 Work Activities")
+        st.header(ui_text("initial.activities_header", language))
         checked_ids: list[int] = []
         for interest in RIASEC_INTERESTS:
-            st.subheader(interest)
+            st.subheader(interest_label(interest, language))
             columns = st.columns(2)
             for index, question in enumerate(grouped_questions[interest]):
                 with columns[index % 2]:
                     checked = st.checkbox(
-                        question["text"],
+                        question_text(question, language),
                         key=f"activity_{question['id']}",
                     )
                 if checked:
                     checked_ids.append(question["id"])
 
-        st.header("Job Zone Questions")
-        st.markdown("**A. Current Job Zone**")
+        st.header(ui_text("initial.job_zone_header", language))
+        st.markdown(f"**{ui_text('initial.current_job_zone_heading', language)}**")
         current_job_zone = st.selectbox(
-            "What level of education, training, and experience do you currently have?",
+            ui_text("initial.current_job_zone_question", language),
             options=list(JOB_ZONE_LABELS),
-            format_func=_format_job_zone,
+            format_func=lambda zone: _format_job_zone_for_language(zone, language),
             index=2,
         )
-        st.markdown("**B. Future Job Zone**")
+        st.markdown(f"**{ui_text('initial.future_job_zone_heading', language)}**")
         future_job_zone = st.selectbox(
-            "What level of education, training, and experience are you willing to work toward?",
+            ui_text("initial.future_job_zone_question", language),
             options=list(JOB_ZONE_LABELS),
-            format_func=_format_job_zone,
+            format_func=lambda zone: _format_job_zone_for_language(zone, language),
             index=3,
         )
-        submitted = st.form_submit_button("Submit")
+        submitted = st.form_submit_button(ui_text("initial.submit", language))
 
     if not submitted:
         return
@@ -273,24 +322,24 @@ def _render_initial_form(questions: list[dict[str, Any]], career_listings: list[
     _reset_followup_state()
 
 
-def _render_profile_result(result: dict[str, Any]) -> None:
-    _render_followup(result)
-    _render_final_report_section(st.session_state.get("profile_result", result))
+def _render_profile_result(result: dict[str, Any], language: str) -> None:
+    _render_followup(result, language)
+    _render_final_report_section(st.session_state.get("profile_result", result), language)
 
 
-def _render_followup(result: dict[str, Any]) -> None:
+def _render_followup(result: dict[str, Any], language: str) -> None:
     ambiguity = result.get("score_ambiguity") or {}
     followup_refinement = result.get("followup_refinement")
 
-    st.header("Follow-Up Refinement")
+    st.header(ui_text("followup.header", language))
     rag_ready, inspection = _rag_artifacts_ready()
     if not rag_ready and not followup_refinement:
-        _render_missing_artifacts_message(inspection)
+        _render_missing_artifacts_message(inspection, language)
         return
 
     if followup_refinement and followup_refinement.get("method") == "in_progress":
         if not rag_ready:
-            _render_missing_artifacts_message(inspection)
+            _render_missing_artifacts_message(inspection, language)
             return
         st.session_state["ip_followup_plan"] = (
             st.session_state.get("ip_followup_plan")
@@ -303,49 +352,43 @@ def _render_followup(result: dict[str, Any]) -> None:
             or []
         )
         st.session_state["ip_followup_active"] = True
-        _render_followup_question(result)
+        _render_followup_question(result, language)
         return
 
     if followup_refinement:
-        _show_followup_refinement(followup_refinement)
+        _show_followup_refinement(followup_refinement, language)
         return
 
     if st.session_state.get("ip_followup_active"):
         if not rag_ready:
-            _render_missing_artifacts_message(inspection)
+            _render_missing_artifacts_message(inspection, language)
             return
-        _render_followup_question(result)
+        _render_followup_question(result, language)
         return
 
     if st.session_state.get("ip_followup_complete"):
         return
 
     if ambiguity.get("has_ambiguity"):
-        st.info(
-            "Your profile has some close or tied interest areas. You can answer a few "
-            "follow-up questions to refine your result."
-        )
+        st.info(ui_text("followup.ambiguity_info", language))
     else:
-        st.info(
-            "Your scores are clear, but you can answer a few questions to personalize "
-            "the recommendations further."
-        )
+        st.info(ui_text("followup.clear_info", language))
 
     continue_col, skip_col = st.columns(2)
     with continue_col:
-        if st.button("Continue with follow-up questions"):
+        if st.button(ui_text("followup.continue", language)):
             st.session_state["ip_followup_plan"] = build_followup_question_plan(result)
             st.session_state["ip_followup_answers"] = []
             st.session_state["ip_followup_active"] = True
             st.session_state["ip_followup_complete"] = False
             st.rerun()
     with skip_col:
-        if st.button("Skip follow-up and use initial result"):
+        if st.button(ui_text("followup.skip", language)):
             st.session_state["ip_followup_complete"] = True
             st.rerun()
 
 
-def _render_followup_question(result: dict[str, Any]) -> None:
+def _render_followup_question(result: dict[str, Any], language: str) -> None:
     in_progress = result.get("followup_refinement") or {}
     question_plan = (
         st.session_state.get("ip_followup_plan")
@@ -364,10 +407,10 @@ def _render_followup_question(result: dict[str, Any]) -> None:
             refinement = complete_followup_refinement(result, questions_asked)
             updated = update_profile_with_followup(result, refinement)
         except MissingRagArtifactsError as exc:
-            st.error(str(exc))
+            st.error(_format_missing_artifacts_error_for_ui({"missing": exc.missing_artifacts}, language))
             return
         except Exception as exc:
-            st.error(f"Could not compute follow-up RAG refinement: {exc}")
+            st.error(ui_text("followup.rag_error_prefix", language) + str(exc))
             return
         save_profile_result(updated, RESULT_PATH)
         _set_profile_result(updated, "session_state")
@@ -378,16 +421,23 @@ def _render_followup_question(result: dict[str, Any]) -> None:
         st.rerun()
         return
 
-    st.caption(f"Question {len(questions_asked) + 1} of max {MAX_FOLLOWUP_QUESTIONS}")
-    st.write(current["question"])
+    st.caption(
+        ui_text(
+            "followup.question_progress",
+            language,
+            current=len(questions_asked) + 1,
+            maximum=MAX_FOLLOWUP_QUESTIONS,
+        )
+    )
+    st.write(followup_question_text(current, language))
     with st.form(f"followup_question_{len(questions_asked)}"):
-        answer = st.text_area("Your answer", key=f"followup_answer_{len(questions_asked)}")
-        submitted = st.form_submit_button("Submit answer")
+        answer = st.text_area(ui_text("followup.answer_label", language), key=f"followup_answer_{len(questions_asked)}")
+        submitted = st.form_submit_button(ui_text("followup.submit_answer", language))
 
     if not submitted:
         return
     if not answer.strip():
-        st.warning("Please add a short answer before continuing.")
+        st.warning(ui_text("followup.empty_answer_warning", language))
         return
 
     updated_plan, updated_answers = record_followup_answer(question_plan, questions_asked, answer)
@@ -409,9 +459,9 @@ def _render_followup_question(result: dict[str, Any]) -> None:
     st.rerun()
 
 
-def _show_followup_refinement(followup_refinement: dict[str, Any]) -> None:
+def _show_followup_refinement(followup_refinement: dict[str, Any], language: str) -> None:
     if not followup_refinement.get("json_valid", True):
-        st.warning("The LLM response was not valid JSON after repair. A conservative fallback was saved.")
+        st.warning(ui_text("followup.invalid_json_warning", language))
 
 
 def _rag_artifacts_ready() -> tuple[bool, dict[str, Any]]:
@@ -419,8 +469,48 @@ def _rag_artifacts_ready() -> tuple[bool, dict[str, Any]]:
     return bool(inspection.get("rag_enabled")), inspection
 
 
-def _render_missing_artifacts_message(inspection: dict[str, Any]) -> None:
-    st.error(format_missing_artifacts_error(list(inspection.get("missing") or [])))
+def _render_missing_artifacts_message(inspection: dict[str, Any], language: str) -> None:
+    st.error(_format_missing_artifacts_error_for_ui(inspection, language))
+
+
+def _format_missing_artifacts_error_for_ui(inspection: dict[str, Any], language: str) -> str:
+    missing = list(inspection.get("missing") or [])
+    if normalize_language(language) == "en":
+        return format_missing_artifacts_error(missing)
+
+    restore_command = inspection.get("restore_command") or r"python scripts\archives\restore_data_archives.py"
+    build_command = inspection.get("build_command") or r"python scripts\build_all_artifacts.py"
+    check_command = inspection.get("check_command") or r"python scripts\check_artifacts.py"
+    lines = [
+        ui_text("artifacts.missing_title", language),
+        "",
+        ui_text("artifacts.missing_list", language),
+    ]
+    for artifact in missing:
+        detail = artifact.get("display_path") or artifact.get("path")
+        count = artifact.get("count")
+        error = artifact.get("error")
+        suffix = ""
+        if count is not None:
+            suffix += f" (count={count})"
+        if error:
+            suffix += f" - {error}"
+        lines.append(f"- {artifact_label(artifact, language)}: {detail}{suffix}")
+
+    lines.extend(
+        [
+            "",
+            ui_text("artifacts.use_prebuilt", language),
+            f"  {restore_command}",
+            "",
+            ui_text("artifacts.rebuild", language),
+            f"  {build_command}",
+            "",
+            ui_text("artifacts.verify", language),
+            f"  {check_command}",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def _load_saved_final_report() -> dict[str, Any] | None:
@@ -434,36 +524,33 @@ def _load_saved_final_report() -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
-def _render_final_report_section(result: dict[str, Any]) -> None:
-    st.header("Final Career Report")
-    st.write(
-        "Generate a source-grounded report from the saved Interest Profiler profile, "
-        "local O*NET data, and available AI-impact evidence."
-    )
+def _render_final_report_section(result: dict[str, Any], language: str) -> None:
+    st.header(ui_text("final.header", language))
+    st.write(ui_text("final.description", language))
 
     if (result.get("followup_refinement") or {}).get("method") == "in_progress":
-        st.info("Finish the follow-up questions to compute the refined ranking before generating the final report.")
+        st.info(ui_text("final.finish_followup_info", language))
         return
 
     rag_ready, inspection = _rag_artifacts_ready()
     if not rag_ready:
-        _render_missing_artifacts_message(inspection)
+        _render_missing_artifacts_message(inspection, language)
         return
 
-    if st.button("Generate Final Career Report"):
-        with st.spinner("Retrieving O*NET and AI-impact evidence..."):
+    if st.button(ui_text("final.generate_button", language)):
+        with st.spinner(ui_text("final.spinner", language)):
             try:
                 report = build_final_career_report(result, top_k=10)
                 validation_errors = _validate_report_matches_profile(report, result)
                 if validation_errors:
-                    st.error("Final report validation failed: " + "; ".join(validation_errors))
+                    st.error(ui_text("final.validation_failed_prefix", language) + "; ".join(validation_errors))
                     return
             except Exception as exc:
-                st.error(f"Could not generate the final career report: {exc}")
+                st.error(ui_text("final.generation_error_prefix", language) + str(exc))
                 return
         st.session_state["final_report"] = report
         st.session_state["ip_final_career_report"] = report
-        st.success("Final career report generated.")
+        st.success(ui_text("final.success", language))
 
     report = st.session_state.get("final_report") or st.session_state.get("ip_final_career_report")
     if not report and not result:
@@ -471,14 +558,14 @@ def _render_final_report_section(result: dict[str, Any]) -> None:
     if report:
         validation_errors = _validate_report_matches_profile(report, result)
         if validation_errors:
-            st.warning("Hidden stale final report because it does not match the current profile: " + "; ".join(validation_errors))
+            st.warning(ui_text("final.stale_warning_prefix", language) + "; ".join(validation_errors))
             return
         if not _report_uses_current_future_grouping(report):
             st.session_state["final_report"] = None
             st.session_state["ip_final_career_report"] = None
             report = None
     if report:
-        render_final_career_report(report)
+        render_final_career_report(report, language=language)
 
 
 def _report_uses_current_future_grouping(report: dict[str, Any]) -> bool:
@@ -494,15 +581,16 @@ def _report_uses_current_future_grouping(report: dict[str, Any]) -> bool:
 
 def main() -> None:
     st.set_page_config(page_title="AI Aware Career Guide", layout="wide")
-    _render_app_intro()
+    language = _render_language_switch()
+    _render_app_intro(language)
 
     questions = _load_questions()
     career_listings = _load_career_listings()
 
-    _render_initial_form(questions, career_listings)
+    _render_initial_form(questions, career_listings, language)
     result, _source = _get_current_profile_result()
     if result:
-        _render_profile_result(result)
+        _render_profile_result(result, language)
 
 
 if __name__ == "__main__":

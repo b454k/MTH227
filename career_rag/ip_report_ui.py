@@ -8,6 +8,17 @@ from typing import Any
 
 import streamlit as st
 
+from career_rag.ui_i18n import (
+    display_label,
+    dynamic_list,
+    dynamic_text,
+    dynamic_translation_available,
+    interest_label,
+    job_zone_preparation,
+    normalize_language,
+    ui_text,
+)
+
 
 JOB_ZONE_PREPARATION_EXPLANATIONS = {
     1: "no experience required",
@@ -29,178 +40,177 @@ FOUNDATIONAL_SOFT_SKILLS = {
 }
 
 
-def render_final_career_report(report: dict[str, Any]) -> None:
+def render_final_career_report(report: dict[str, Any], language: str = "en") -> None:
     """Render the final career report in a clean tabbed Streamlit layout."""
     if not report:
-        st.info("No final career report is available yet.")
+        st.info(ui_text("report.no_final", language))
         return
+    if normalize_language(language) == "tr" and not dynamic_translation_available(language):
+        st.warning(ui_text("translation.unavailable", language))
 
     tabs = st.tabs(
         [
-            "Summary",
-            "Top Matches",
-            "Alternatives",
-            "Semantic Report",
-            "Sources",
+            ui_text("report.tab.summary", language),
+            ui_text("report.tab.top_matches", language),
+            ui_text("report.tab.alternatives", language),
+            ui_text("report.tab.semantic", language),
+            ui_text("report.tab.sources", language),
         ]
     )
 
     with tabs[0]:
-        _render_summary(report)
+        _render_summary(report, language)
     with tabs[1]:
-        _render_top_matches(report)
+        _render_top_matches(report, language)
     with tabs[2]:
-        _render_alternatives(report)
+        _render_alternatives(report, language)
     with tabs[3]:
-        _render_semantic_report(report)
+        _render_semantic_report(report, language)
     with tabs[4]:
-        _render_sources(report)
+        _render_sources(report, language)
 
 
-def _render_summary(report: dict[str, Any]) -> None:
+def _render_summary(report: dict[str, Any], language: str = "en") -> None:
     profile = report.get("profile_used") or {}
-    st.subheader("Profile Summary")
+    st.subheader(ui_text("report.summary.header", language))
 
     top_interests = profile.get("final_top_interests") or profile.get("top_interests") or []
     if top_interests:
-        st.caption("Top interests")
-        st.write(", ".join(str(item) for item in top_interests[:3]))
+        st.caption(ui_text("report.summary.top_interests", language))
+        st.write(", ".join(interest_label(item, language) for item in top_interests[:3]))
 
     cols = st.columns(3)
-    cols[0].caption("Final code")
+    cols[0].caption(ui_text("report.summary.final_code", language))
     cols[0].write(f"**{profile.get('final_holland_code', '')}**")
-    cols[1].caption("Current zone")
-    cols[1].write(_job_zone_title(profile.get("current_job_zone")))
-    cols[2].caption("Future zone")
-    cols[2].write(_job_zone_title(profile.get("future_job_zone")))
+    cols[1].caption(ui_text("report.summary.current_zone", language))
+    cols[1].write(_job_zone_title(profile.get("current_job_zone"), language))
+    cols[2].caption(ui_text("report.summary.future_zone", language))
+    cols[2].write(_job_zone_title(profile.get("future_job_zone"), language))
 
     preferences = profile.get("sub_preferences") or []
     if preferences:
-        st.markdown("**Preferences Used For Matching**")
-        _render_grouped_preferences(preferences)
+        st.markdown(f"**{ui_text('report.summary.preferences', language)}**")
+        _render_grouped_preferences(preferences, language)
     if profile.get("career_matching_guidance"):
-        st.caption(profile["career_matching_guidance"])
+        st.caption(dynamic_text(profile["career_matching_guidance"], language, "career matching guidance"))
 
 
-def _render_top_matches(report: dict[str, Any]) -> None:
-    st.subheader("Top Career Matches")
+def _render_top_matches(report: dict[str, Any], language: str = "en") -> None:
+    st.subheader(ui_text("report.top_matches.header", language))
     matches = report.get("top_matches") or []
-    st.caption(
-        "This report shows up to five careers for your current Job Zone and up to five "
-        "careers for the future Job Zone you are willing to work toward."
-    )
+    st.caption(ui_text("report.top_matches.caption", language))
 
     for group_label, group_matches in _group_top_matches(matches):
         if group_label:
-            st.markdown(f"**{group_label}**")
+            st.markdown(f"**{display_label(group_label, language)}**")
         for match in group_matches:
             with st.container(border=True):
                 cols = st.columns([3, 1])
-                cols[0].markdown(f"**{match.get('rank')}. {_match_title(match)}**")
-                cols[1].metric("Fit", match.get("fit_label") or match.get("fit_score"))
+                cols[0].markdown(f"**{match.get('rank')}. {_match_title(match, language)}**")
+                fit_value = match.get("fit_label") or match.get("fit_score")
+                if isinstance(fit_value, str):
+                    fit_value = display_label(fit_value, language)
+                cols[1].metric(ui_text("report.top_matches.fit", language), fit_value)
                 if match.get("resolution_note"):
-                    st.caption(match["resolution_note"])
+                    st.caption(dynamic_text(match["resolution_note"], language, "career title resolution note"))
 
-                with st.expander("Job detail card"):
-                    _render_job_detail(match)
+                with st.expander(ui_text("report.top_matches.detail_card", language)):
+                    _render_job_detail(match, language)
 
 
-def _render_job_detail(match: dict[str, Any]) -> None:
+def _render_job_detail(match: dict[str, Any], language: str = "en") -> None:
     details = match.get("onet_details") or {}
-    st.markdown("**What This Job Does**")
-    description = details.get("description") or "No local O*NET description was retrieved."
-    st.write(_without_citations(description))
+    st.markdown(f"**{ui_text('report.job.what_does', language)}**")
+    description = details.get("description") or ui_text("report.job.no_description", language)
+    st.write(dynamic_text(_without_citations(description), language, "O*NET occupation description"))
     _write_source_indexes(description)
 
-    st.markdown("**Main Tasks**")
+    st.markdown(f"**{ui_text('report.job.main_tasks', language)}**")
     tasks = details.get("tasks") or []
-    _write_bullets(tasks)
+    _write_bullets(tasks, language)
     _write_source_indexes(tasks)
 
-    st.markdown("**Key Skills**")
-    _render_key_skills(match)
+    st.markdown(f"**{ui_text('report.job.key_skills', language)}**")
+    _render_key_skills(match, language)
 
-    st.markdown("**Education / Job Zone**")
-    _render_education_job_zone(match)
+    st.markdown(f"**{ui_text('report.job.education_zone', language)}**")
+    _render_education_job_zone(match, language)
 
-    st.markdown("**AI Impact Breakdown**")
-    _render_ai_table(match)
+    st.markdown(f"**{ui_text('report.job.ai_impact', language)}**")
+    _render_ai_table(match, language)
 
-    st.markdown("**Day In The Life**")
+    st.markdown(f"**{ui_text('report.job.day_life', language)}**")
     day_text = match.get("day_in_the_life") or ""
     if day_text:
-        st.info(_clean_day_text(day_text))
+        st.info(dynamic_text(_clean_day_text(day_text), language, "day-in-the-life career narrative"))
         _write_source_indexes([day_text, details.get("tasks") or [], details.get("work_context") or []])
 
 
-def _render_ai_table(match: dict[str, Any]) -> None:
+def _render_ai_table(match: dict[str, Any], language: str = "en") -> None:
     rows = []
     for item in match.get("ai_impact", {}).get("task_breakdown") or []:
         score = item.get("score_display")
         if not score:
-            score = "N/A" if item.get("score") is None else item.get("score")
+            score = ui_text("common.na", language) if item.get("score") is None else item.get("score")
         rows.append(
             {
-                "Task": item.get("task"),
-                "AI exposure signal": item.get("automation_level"),
-                "Score": score,
-                "Source": _format_source_ids(item.get("source_ids") or []),
+                ui_text("report.ai.table.task", language): dynamic_text(
+                    item.get("task"), language, "AI-impact task"
+                ),
+                ui_text("report.ai.table.signal", language): dynamic_text(
+                    item.get("automation_level"), language, "AI exposure level"
+                ),
+                ui_text("report.ai.table.score", language): score,
+                ui_text("report.ai.table.source", language): _format_source_ids(item.get("source_ids") or []),
             }
         )
     if rows:
         _render_wrapped_table(rows)
-        st.caption(
-            "AI exposure signal is a plain-language level from the local task evidence. "
-            "Score represents Observed Claude Usage Share as a percentage, not a "
-            "0-100 risk score. For example, a score of 0.4015 means 0.4015% of "
-            "mapped Claude conversations, approximately 4 out of every 1,000. "
-            "N/A means no exact local task match, not zero AI impact."
-        )
+        st.caption(ui_text("report.ai.caption", language))
     else:
-        st.info("No AI impact rows were available for this occupation.")
+        st.info(ui_text("report.ai.no_rows", language))
 
 
-def _render_alternatives(report: dict[str, Any]) -> None:
-    st.subheader("Alternative Careers")
+def _render_alternatives(report: dict[str, Any], language: str = "en") -> None:
+    st.subheader(ui_text("report.alternatives.header", language))
     alternatives = report.get("alternative_careers") or []
     if not alternatives:
-        st.info("No alternatives were resolved from local O*NET evidence.")
+        st.info(ui_text("report.alternatives.none", language))
         return
     source_map = _source_map(report)
     for item in alternatives[:5]:
-        zone = _job_zone_title((item.get("job_zone") or {}).get("zone"))
+        zone = _job_zone_title((item.get("job_zone") or {}).get("zone"), language)
         source_links = _source_links(item, source_map)
         suffix = f" {source_links}" if source_links else ""
-        st.markdown(f"- **{item.get('title')}** - {zone}{suffix}")
+        title = dynamic_text(item.get("title"), language, "alternative career title")
+        st.markdown(f"- **{title}** - {zone}{suffix}")
 
 
-def _render_semantic_report(report: dict[str, Any]) -> None:
-    st.subheader("Semantic Retrieval Report")
+def _render_semantic_report(report: dict[str, Any], language: str = "en") -> None:
+    st.subheader(ui_text("report.semantic.header", language))
     section = report.get("semantic_retrieval_report") or {}
     if not section:
-        st.info("Generate a new final report to add the semantic O*NET and AI-impact comparison.")
+        st.info(ui_text("report.semantic.need_new_report", language))
         return
 
-    st.caption(
-        "This comparison uses follow-up answers and preferences as the strongest semantic "
-        "search signal, with the selected current and future Job Zones used to keep results "
-        "aligned with the user's education/preparation choices. It is separate from the "
-        "scoring-based top matches."
-    )
+    st.caption(ui_text("report.semantic.caption", language))
 
     summary = section.get("summary") or ""
     if section.get("status") != "ok":
-        st.info(_without_citations(summary) or "Semantic O*NET/AI-impact retrieval did not return enough evidence.")
+        st.info(
+            dynamic_text(_without_citations(summary), language, "semantic report summary")
+            or ui_text("report.semantic.not_enough", language)
+        )
         errors = section.get("errors") or {}
         for label, error in errors.items():
             if error:
-                st.caption(f"{label}: {error}")
+                st.caption(f"{display_label(label, language)}: {error}")
         return
 
-    semantic_markdown = _semantic_report_markdown(section)
+    semantic_markdown = _semantic_report_markdown(section, language)
     if semantic_markdown:
         with st.container(border=True):
-            st.markdown(format_semantic_report(semantic_markdown))
+            st.markdown(format_semantic_report(semantic_markdown, language))
             _write_source_indexes(
                 [
                     section.get("relevant_careers_explanation"),
@@ -212,38 +222,39 @@ def _render_semantic_report(report: dict[str, Any]) -> None:
 
     signals = section.get("semantic_career_signals") or []
     if signals:
-        st.markdown("**Careers Surfaced By Semantic Retrieval**")
-        st.caption(
-            "Similarity signal is a weighted average of Chroma similarity scores. "
-            "Rows retrieved from follow-up-answer queries count more than broad profile rows; "
-            "O*NET evidence has weight 2 and AI-impact evidence has weight 1. Careers outside "
-            "the selected Job Zones are penalized."
-        )
+        st.markdown(f"**{ui_text('report.semantic.signals_heading', language)}**")
+        st.caption(ui_text("report.semantic.signals_caption", language))
         rows = []
         for item in signals:
             rows.append(
                 {
-                    "Career": item.get("title") or "",
-                    "O*NET-SOC": item.get("soc_code") or "",
-                    "Job Zone": item.get("job_zone") or "",
-                    "Similarity signal": item.get("semantic_signal") or "",
-                    "Sources": _format_source_ids(item.get("source_ids") or []),
+                    ui_text("report.semantic.table.career", language): dynamic_text(
+                        item.get("title") or "", language, "semantic career signal title"
+                    ),
+                    ui_text("report.semantic.table.soc", language): item.get("soc_code") or "",
+                    ui_text("report.semantic.table.job_zone", language): item.get("job_zone") or "",
+                    ui_text("report.semantic.table.signal", language): item.get("semantic_signal") or "",
+                    ui_text("report.semantic.table.sources", language): _format_source_ids(item.get("source_ids") or []),
                 }
             )
         _render_wrapped_table(rows)
 
     onet_rows = section.get("retrieved_onet") or []
     if onet_rows:
-        with st.expander("Retrieved O*NET evidence", expanded=False):
+        with st.expander(ui_text("report.semantic.retrieved_onet", language), expanded=False):
             _render_wrapped_table(
                 [
                     {
-                        "Source": f"[{item.get('source_id')}]",
-                        "Career / section": " - ".join(
-                            part for part in [item.get("title"), item.get("section")] if part
+                        ui_text("report.semantic.table.source", language): f"[{item.get('source_id')}]",
+                        ui_text("report.semantic.table.career_section", language): " - ".join(
+                            dynamic_text(part, language, "retrieved O*NET title or section")
+                            for part in [item.get("title"), item.get("section")]
+                            if part
                         ),
-                        "Job Zone": item.get("job_zone") or "",
-                        "Retrieved passage": item.get("snippet") or "",
+                        ui_text("report.semantic.table.job_zone", language): item.get("job_zone") or "",
+                        ui_text("report.semantic.table.passage", language): dynamic_text(
+                            item.get("snippet") or "", language, "retrieved O*NET evidence passage"
+                        ),
                     }
                     for item in onet_rows
                 ]
@@ -251,58 +262,74 @@ def _render_semantic_report(report: dict[str, Any]) -> None:
 
     ai_rows = section.get("retrieved_ai_impact") or []
     if ai_rows:
-        with st.expander("Retrieved AI-impact evidence", expanded=False):
+        with st.expander(ui_text("report.semantic.retrieved_ai", language), expanded=False):
             _render_wrapped_table(
                 [
                     {
-                        "Source": f"[{item.get('source_id')}]",
-                        "Occupation / signal": " - ".join(
-                            part for part in [item.get("occupation"), item.get("impact_type")] if part
+                        ui_text("report.semantic.table.source", language): f"[{item.get('source_id')}]",
+                        ui_text("report.semantic.table.occupation_signal", language): " - ".join(
+                            dynamic_text(part, language, "retrieved AI-impact occupation or signal")
+                            for part in [item.get("occupation"), item.get("impact_type")]
+                            if part
                         ),
-                        "Job Zone": item.get("job_zone") or "",
-                        "Task": item.get("task") or "",
-                        "Retrieved passage": item.get("snippet") or "",
+                        ui_text("report.semantic.table.job_zone", language): item.get("job_zone") or "",
+                        ui_text("report.semantic.table.task", language): dynamic_text(
+                            item.get("task") or "", language, "retrieved AI-impact task"
+                        ),
+                        ui_text("report.semantic.table.passage", language): dynamic_text(
+                            item.get("snippet") or "", language, "retrieved AI-impact evidence passage"
+                        ),
                     }
                     for item in ai_rows
                 ]
             )
 
 
-def _render_sources(report: dict[str, Any]) -> None:
-    st.subheader("Sources")
-    with st.expander("View numbered citations", expanded=True):
+def _render_sources(report: dict[str, Any], language: str = "en") -> None:
+    st.subheader(ui_text("report.sources.header", language))
+    with st.expander(ui_text("report.sources.expander", language), expanded=True):
         for source in report.get("sources") or []:
-            label = f"[{source.get('id')}] {source.get('title')}"
+            title = dynamic_text(source.get("title"), language, "source title")
+            label = f"[{source.get('id')}] {title}"
             if source.get("url"):
                 st.markdown(f"**[{label}]({source['url']})**")
             else:
                 st.markdown(f"**{label}**")
             if source.get("retrieved_section"):
-                st.write(source["retrieved_section"])
+                st.write(dynamic_text(source["retrieved_section"], language, "retrieved source section"))
             if source.get("note"):
-                st.caption(source["note"])
+                st.caption(dynamic_text(source["note"], language, "source note"))
             if source.get("url"):
                 st.write(source["url"])
 
 
-def _semantic_report_markdown(section: dict[str, Any]) -> str:
+def _semantic_report_markdown(section: dict[str, Any], language: str = "en") -> str:
     """Build the semantic report body as markdown before display cleanup."""
-    relevant = section.get("relevant_careers_explanation") or section.get("summary") or ""
-    technology = section.get("technology_ai_role") or ""
+    relevant = dynamic_text(
+        section.get("relevant_careers_explanation") or section.get("summary") or "",
+        language,
+        "semantic report relevant careers explanation",
+    )
+    technology = dynamic_text(
+        section.get("technology_ai_role") or "",
+        language,
+        "semantic report technology and AI role",
+    )
     takeaways = section.get("takeaways") or []
 
     parts = []
     if relevant:
-        parts.append(f"Relevant Careers {relevant}")
+        parts.append(f"{ui_text('report.semantic.relevant_heading', language)} {relevant}")
     if technology:
-        parts.append(f"Role of Technology and AI {technology}")
+        parts.append(f"{ui_text('report.semantic.technology_heading', language)} {technology}")
     if takeaways:
-        bullet_text = " ".join(f"- {item}" for item in takeaways if str(item or "").strip())
-        parts.append(f"Takeaways {bullet_text}")
+        translated_takeaways = dynamic_list(takeaways, language, "semantic report takeaways")
+        bullet_text = " ".join(f"- {item}" for item in translated_takeaways if str(item or "").strip())
+        parts.append(f"{ui_text('report.semantic.takeaways_heading', language)} {bullet_text}")
     return "\n\n".join(parts)
 
 
-def format_semantic_report(text: str) -> str:
+def format_semantic_report(text: str, language: str = "en") -> str:
     """Clean malformed semantic-report markdown while preserving content."""
     cleaned = str(text or "").strip()
     if not cleaned:
@@ -312,10 +339,20 @@ def format_semantic_report(text: str) -> str:
     cleaned = re.sub(r"[ \t]+", " ", cleaned)
 
     heading_titles = {
-        "relevant careers": "Relevant Careers",
-        "role of technology and ai": "Role of Technology and AI",
-        "takeaways": "Takeaways",
+        "Relevant Careers": ui_text("report.semantic.relevant_heading", language),
+        "Role of Technology and AI": ui_text("report.semantic.technology_heading", language),
+        "Takeaways": ui_text("report.semantic.takeaways_heading", language),
+        ui_text("report.semantic.relevant_heading", language): ui_text(
+            "report.semantic.relevant_heading", language
+        ),
+        ui_text("report.semantic.technology_heading", language): ui_text(
+            "report.semantic.technology_heading", language
+        ),
+        ui_text("report.semantic.takeaways_heading", language): ui_text(
+            "report.semantic.takeaways_heading", language
+        ),
     }
+    heading_lookup = {key.casefold(): value for key, value in heading_titles.items()}
     for title in heading_titles.values():
         escaped = re.escape(title)
         cleaned = re.sub(
@@ -326,12 +363,14 @@ def format_semantic_report(text: str) -> str:
 
     heading_pattern = re.compile(
         r"(?i)(^|\s+)(?:#{1,6}\s*)?"
-        r"(Relevant Careers|Role of Technology and AI|Takeaways)\s*:?\s*"
+        r"("
+        + "|".join(re.escape(title) for title in heading_titles)
+        + r")\s*:?\s*"
     )
 
     def heading_replacement(match: re.Match[str]) -> str:
-        raw_title = re.sub(r"\s+", " ", match.group(2)).strip().lower()
-        title = heading_titles.get(raw_title, match.group(2).strip())
+        raw_title = re.sub(r"\s+", " ", match.group(2)).strip()
+        title = heading_lookup.get(raw_title.casefold(), match.group(2).strip())
         prefix = "" if match.start() == 0 else "\n\n"
         return f"{prefix}#### {title}\n\n"
 
@@ -378,25 +417,25 @@ def _render_wrapped_table(rows: list[dict[str, Any]]) -> None:
     )
 
 
-def _write_bullets(items: list[Any]) -> None:
+def _write_bullets(items: list[Any], language: str = "en") -> None:
     if not items:
-        st.write("No local evidence was retrieved for this section.")
+        st.write(ui_text("report.no_local_evidence", language))
         return
     for item in items:
-        st.write(f"- {_without_citations(item)}")
+        st.write(f"- {dynamic_text(_without_citations(item), language, 'report bullet')}")
 
 
-def _render_key_skills(match: dict[str, Any]) -> None:
+def _render_key_skills(match: dict[str, Any], language: str = "en") -> None:
     grouped = match.get("key_skills") or {}
     if not grouped:
         details = match.get("onet_details") or {}
         grouped = _fallback_key_skills(details)
 
     ordered_groups = [
-        ("software_tools", "Software / technical tools"),
-        ("technical_and_domain", "Technical and domain skills"),
-        ("foundational_communication", "Foundational communication"),
-        ("knowledge_areas", "Knowledge areas"),
+        ("software_tools", ui_text("report.skills.software", language)),
+        ("technical_and_domain", ui_text("report.skills.technical", language)),
+        ("foundational_communication", ui_text("report.skills.foundational", language)),
+        ("knowledge_areas", ui_text("report.skills.knowledge", language)),
     ]
     rendered_any = False
     for key, label in ordered_groups:
@@ -405,19 +444,25 @@ def _render_key_skills(match: dict[str, Any]) -> None:
             continue
         rendered_any = True
         st.caption(label)
-        st.markdown(_skill_chip_html(values), unsafe_allow_html=True)
+        st.markdown(
+            _skill_chip_html(dynamic_list(values, language, f"{label} skills")),
+            unsafe_allow_html=True,
+        )
         _write_source_indexes(values)
     if not rendered_any:
-        st.write("No local evidence was retrieved for this section.")
+        st.write(ui_text("report.no_local_evidence", language))
 
 
-def _render_grouped_preferences(preferences: list[Any]) -> None:
+def _render_grouped_preferences(preferences: list[Any], language: str = "en") -> None:
     grouped = _group_preferences(preferences)
     for label, values in grouped.items():
         if not values:
             continue
-        st.caption(label)
-        st.markdown(_skill_chip_html(values), unsafe_allow_html=True)
+        st.caption(display_label(label, language))
+        st.markdown(
+            _skill_chip_html(dynamic_list(values, language, f"{label} preferences")),
+            unsafe_allow_html=True,
+        )
 
 
 def _group_preferences(preferences: list[Any]) -> dict[str, list[str]]:
@@ -443,26 +488,30 @@ def _group_preferences(preferences: list[Any]) -> dict[str, list[str]]:
     return groups
 
 
-def _render_education_job_zone(match: dict[str, Any]) -> None:
+def _render_education_job_zone(match: dict[str, Any], language: str = "en") -> None:
     details = match.get("onet_details") or {}
     job_zone = details.get("job_zone") or {}
     education = _dedupe_text(details.get("education") or [])
     education_entries = _education_entries(education)
 
-    prep_summary = _education_preparation_summary(job_zone, education_entries)
+    prep_summary = _education_preparation_summary(job_zone, education_entries, language)
     if prep_summary:
-        st.write("Typical preparation: " + prep_summary)
+        st.write(ui_text("report.education.typical", language) + prep_summary)
 
-    training = _clean_job_zone_training(job_zone.get("training"))
+    training = dynamic_text(
+        _clean_job_zone_training(job_zone.get("training")),
+        language,
+        "O*NET job zone training",
+    )
     if training:
-        st.write("Experience and training: " + training)
+        st.write(ui_text("report.education.training", language) + training)
 
     if education:
-        st.caption("O*NET education responses")
-        _write_bullets([_format_education_entry(item) for item in education_entries])
+        st.caption(ui_text("report.education.responses", language))
+        _write_bullets([_format_education_entry(item) for item in education_entries], language)
 
     if not education and not prep_summary and not training:
-        st.write("No local education or Job Zone evidence was retrieved for this section.")
+        st.write(ui_text("report.education.none", language))
     _write_source_indexes([job_zone, education])
 
 
@@ -499,37 +548,56 @@ def _skill_chip_html(values: list[Any]) -> str:
     )
 
 
-def _match_title(match: dict[str, Any]) -> str:
-    title = str(match.get("display_title") or "Career")
+def _match_title(match: dict[str, Any], language: str = "en") -> str:
+    title = dynamic_text(
+        match.get("display_title") or ui_text("report.career_fallback", language),
+        language,
+        "career match title",
+    )
     details = match.get("onet_details") or {}
     zone = (details.get("job_zone") or {}).get("zone")
     if zone:
-        return f"{title} - {_job_zone_title(zone)}"
+        return f"{title} - {_job_zone_title(zone, language)}"
     return title
 
 
-def _job_zone_detail(job_zone: dict[str, Any]) -> str:
+def _job_zone_detail(job_zone: dict[str, Any], language: str = "en") -> str:
     zone = job_zone.get("zone")
     name = _without_citations(job_zone.get("name") or "")
     education = _without_citations(job_zone.get("education") or "")
     training = _without_citations(job_zone.get("training") or "")
-    parts = [_job_zone_title(zone)]
+    parts = [_job_zone_title(zone, language)]
     if name:
-        parts.append(name)
+        parts.append(dynamic_text(name, language, "O*NET job zone name"))
     if education:
-        parts.append(f"typical education: {education}")
+        parts.append(
+            ui_text(
+                "report.job_zone.typical_education",
+                language,
+                education=dynamic_text(education, language, "O*NET job zone education"),
+            )
+        )
     if training:
-        parts.append(f"training: {training}")
+        parts.append(
+            ui_text(
+                "report.job_zone.training",
+                language,
+                training=dynamic_text(training, language, "O*NET job zone training"),
+            )
+        )
     return ". ".join(parts) + "."
 
 
-def _job_zone_title(zone: Any) -> str:
+def _job_zone_title(zone: Any, language: str = "en") -> str:
     try:
         zone_int = int(zone)
     except (TypeError, ValueError):
-        return "Job Zone unavailable"
-    explanation = JOB_ZONE_PREPARATION_EXPLANATIONS.get(zone_int, "preparation level unavailable")
-    return f"Job Zone {zone_int} ({explanation})"
+        return ui_text("report.job_zone.unavailable", language)
+    if language == "en":
+        explanation = JOB_ZONE_PREPARATION_EXPLANATIONS.get(zone_int, "preparation level unavailable")
+    else:
+        explanation = job_zone_preparation(zone_int, language)
+    return ui_text("report.job_zone.title", language, zone=zone_int, explanation=explanation)
 
 
 def _group_top_matches(matches: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
@@ -585,6 +653,7 @@ def _format_education_entry(entry: dict[str, Any]) -> str:
 def _education_preparation_summary(
     job_zone: dict[str, Any],
     education_entries: list[dict[str, Any]],
+    language: str = "en",
 ) -> str:
     entries_with_percent = [
         entry for entry in education_entries if isinstance(entry.get("percent"), (int, float))
@@ -599,9 +668,13 @@ def _education_preparation_summary(
             entry for entry in sorted_entries if float(entry.get("percent") or 0) > 0
         ]
         if positive_entries:
-            return _plain_education_summary(positive_entries)
+            return _plain_education_summary(positive_entries, language)
 
-    fallback = _clean_job_zone_education(job_zone.get("education"))
+    fallback = dynamic_text(
+        _clean_job_zone_education(job_zone.get("education")),
+        language,
+        "O*NET job zone education",
+    )
     return fallback
 
 
@@ -610,7 +683,7 @@ def _is_bachelors_or_higher(label: Any) -> bool:
     return any(term in text for term in ("bachelor", "master", "doctoral", "professional degree"))
 
 
-def _plain_education_summary(entries: list[dict[str, Any]]) -> str:
+def _plain_education_summary(entries: list[dict[str, Any]], language: str = "en") -> str:
     top = entries[0]
     top_level = _degree_level(top.get("label"))
     bachelor_entry = next((entry for entry in entries if _degree_level(entry.get("label")) == "bachelor"), None)
@@ -618,28 +691,22 @@ def _plain_education_summary(entries: list[dict[str, Any]]) -> str:
 
     if top_level == "master":
         if bachelor_entry:
-            return (
-                "Most O*NET responses point to a master's degree for this role; "
-                "bachelor's-degree paths are present but less common."
-            )
-        return "Most O*NET responses point to a master's degree for this role."
+            return ui_text("report.education.master_with_bachelor", language)
+        return ui_text("report.education.master", language)
     if top_level == "bachelor":
         if master_entry:
-            return (
-                "Most O*NET responses point to a bachelor's degree; "
-                "master's-level preparation is also common."
-            )
-        return "Most O*NET responses point to a bachelor's degree for this role."
+            return ui_text("report.education.bachelor_with_master", language)
+        return ui_text("report.education.bachelor", language)
     if top_level == "doctoral":
-        return "Most O*NET responses point to doctoral or professional-degree preparation for this role."
+        return ui_text("report.education.doctoral", language)
     if top_level == "associate":
-        return "Most O*NET responses point to associate-degree or vocational preparation for this role."
+        return ui_text("report.education.associate", language)
     if top_level == "high_school":
-        return "Most O*NET responses point to high-school-level preparation for this role."
+        return ui_text("report.education.high_school", language)
 
     label = _without_citations(top.get("label"))
     if label:
-        return f"Most O*NET responses point to {label.lower()} for this role."
+        return ui_text("report.education.dynamic", language, label=label.lower())
     return ""
 
 
