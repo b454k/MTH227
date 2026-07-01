@@ -40,13 +40,173 @@ FOUNDATIONAL_SOFT_SKILLS = {
 }
 
 
+def _render_report_styles() -> None:
+    st.markdown(
+        """
+        <style>
+        .report-cover {
+            border: 1px solid #2a2a2f;
+            border-radius: 8px;
+            background: #141416;
+            padding: 1rem;
+            margin: 0.75rem 0 1rem;
+        }
+        .report-cover h2,
+        .match-title {
+            color: #ffffff;
+            font-size: 1.25rem;
+            line-height: 1.15;
+            font-weight: 850;
+            margin: 0;
+        }
+        .report-muted {
+            color: #a4a4aa;
+            line-height: 1.45;
+            margin: 0.45rem 0 0;
+        }
+        .report-kicker {
+            color: #a4a4aa;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 0.45rem;
+        }
+        .report-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.55rem;
+            margin-top: 0.85rem;
+        }
+        .report-stat {
+            border: 1px solid #2a2a2f;
+            border-radius: 8px;
+            background: #1b1b1e;
+            padding: 0.65rem 0.55rem;
+            min-width: 0;
+        }
+        .report-stat-label {
+            color: #a4a4aa;
+            font-size: 0.66rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .report-stat-value {
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 850;
+            margin-top: 0.2rem;
+            overflow-wrap: anywhere;
+        }
+        .report-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.38rem;
+            margin-top: 0.75rem;
+        }
+        .report-chip,
+        .impact-badge {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #3a3a40;
+            border-radius: 999px;
+            padding: 0.22rem 0.55rem;
+            color: #ffffff;
+            background: #202024;
+            font-size: 0.74rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        .match-card {
+            border: 1px solid #2a2a2f;
+            border-radius: 8px;
+            background: #141416;
+            padding: 1rem;
+            margin: 0.75rem 0 0.45rem;
+        }
+        .match-topline {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+        .match-rank {
+            color: #a4a4aa;
+            font-size: 0.8rem;
+            font-weight: 850;
+            white-space: nowrap;
+        }
+        .match-reason {
+            color: #d6d6da;
+            line-height: 1.45;
+            margin: 0.75rem 0 0;
+            font-size: 0.92rem;
+        }
+        .report-group-label {
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: 850;
+            margin: 1rem 0 0.25rem;
+        }
+        .impact-high {
+            background: #f4f4f5;
+            border-color: #f4f4f5;
+            color: #050505;
+        }
+        .impact-medium {
+            background: #b8b8bf;
+            border-color: #b8b8bf;
+            color: #050505;
+        }
+        .impact-low,
+        .impact-available,
+        .impact-unavailable {
+            background: #242428;
+            border-color: #4a4a50;
+            color: #f4f4f5;
+        }
+        .report-section-rule {
+            border-top: 1px solid #2a2a2f;
+            margin: 1rem 0;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _html(value: Any) -> str:
+    return escape(str(value or ""))
+
+
+def _report_stat_html(label: str, value: Any) -> str:
+    return (
+        "<div class='report-stat'>"
+        f"<div class='report-stat-label'>{_html(label)}</div>"
+        f"<div class='report-stat-value'>{_html(value)}</div>"
+        "</div>"
+    )
+
+
+def _chip_html(label: Any, class_name: str = "report-chip") -> str:
+    return f"<span class='{class_name}'>{_html(label)}</span>"
+
+
+def _impact_badge_html(level: str, language: str = "en") -> str:
+    css_level = re.sub(r"[^a-z]+", "-", str(level or "unavailable").lower()).strip("-") or "unavailable"
+    return _chip_html(display_label(level, language), f"impact-badge impact-{css_level}")
+
+
 def render_final_career_report(report: dict[str, Any], language: str = "en") -> None:
     """Render the final career report in a clean tabbed Streamlit layout."""
     if not report:
         st.info(ui_text("report.no_final", language))
         return
+    _render_report_styles()
     if normalize_language(language) == "tr" and not dynamic_translation_available(language):
         st.warning(ui_text("translation.unavailable", language))
+
+    _render_report_cover(report, language)
 
     tabs = st.tabs(
         [
@@ -70,22 +230,71 @@ def render_final_career_report(report: dict[str, Any], language: str = "en") -> 
         _render_sources(report, language)
 
 
+def _render_report_cover(report: dict[str, Any], language: str = "en") -> None:
+    profile = report.get("profile_used") or {}
+    top_interests = profile.get("final_top_interests") or profile.get("top_interests") or []
+    chips = "".join(_chip_html(interest_label(item, language)) for item in top_interests[:3])
+    stats = "".join(
+        [
+            _report_stat_html(
+                ui_text("report.summary.final_code", language),
+                profile.get("final_holland_code") or profile.get("holland_code") or "",
+            ),
+            _report_stat_html(
+                ui_text("report.summary.current_zone", language),
+                _job_zone_title(profile.get("current_job_zone"), language),
+            ),
+            _report_stat_html(
+                ui_text("report.summary.future_zone", language),
+                _job_zone_title(profile.get("future_job_zone"), language),
+            ),
+        ]
+    )
+    st.markdown(
+        (
+            "<div class='report-cover'>"
+            f"<div class='report-kicker'>{_html(ui_text('final.header', language))}</div>"
+            f"<h2>{_html(ui_text('report.summary.header', language))}</h2>"
+            f"<div class='report-chip-row'>{chips}</div>"
+            f"<div class='report-stat-grid'>{stats}</div>"
+            "</div>"
+        ),
+        unsafe_allow_html=True,
+    )
+
+
 def _render_summary(report: dict[str, Any], language: str = "en") -> None:
     profile = report.get("profile_used") or {}
     st.subheader(ui_text("report.summary.header", language))
 
     top_interests = profile.get("final_top_interests") or profile.get("top_interests") or []
-    if top_interests:
-        st.caption(ui_text("report.summary.top_interests", language))
-        st.write(", ".join(interest_label(item, language) for item in top_interests[:3]))
-
-    cols = st.columns(3)
-    cols[0].caption(ui_text("report.summary.final_code", language))
-    cols[0].write(f"**{profile.get('final_holland_code', '')}**")
-    cols[1].caption(ui_text("report.summary.current_zone", language))
-    cols[1].write(_job_zone_title(profile.get("current_job_zone"), language))
-    cols[2].caption(ui_text("report.summary.future_zone", language))
-    cols[2].write(_job_zone_title(profile.get("future_job_zone"), language))
+    chips = "".join(_chip_html(interest_label(item, language)) for item in top_interests[:3])
+    stats = "".join(
+        [
+            _report_stat_html(
+                ui_text("report.summary.final_code", language),
+                profile.get("final_holland_code", ""),
+            ),
+            _report_stat_html(
+                ui_text("report.summary.current_zone", language),
+                _job_zone_title(profile.get("current_job_zone"), language),
+            ),
+            _report_stat_html(
+                ui_text("report.summary.future_zone", language),
+                _job_zone_title(profile.get("future_job_zone"), language),
+            ),
+        ]
+    )
+    st.markdown(
+        (
+            "<div class='report-cover'>"
+            f"<div class='report-kicker'>{_html(ui_text('report.summary.top_interests', language))}</div>"
+            f"<div class='report-chip-row'>{chips}</div>"
+            f"<div class='report-stat-grid'>{stats}</div>"
+            "</div>"
+        ),
+        unsafe_allow_html=True,
+    )
 
     preferences = profile.get("sub_preferences") or []
     if preferences:
@@ -102,28 +311,66 @@ def _render_top_matches(report: dict[str, Any], language: str = "en") -> None:
 
     for group_label, group_matches in _group_top_matches(matches):
         if group_label:
-            st.markdown(f"**{display_label(group_label, language)}**")
+            st.markdown(
+                f"<div class='report-group-label'>{_html(display_label(group_label, language))}</div>",
+                unsafe_allow_html=True,
+            )
         for match in group_matches:
-            with st.container(border=True):
-                cols = st.columns([3, 1])
-                cols[0].markdown(f"**{match.get('rank')}. {_match_title(match, language)}**")
-                fit_value = match.get("fit_label") or match.get("fit_score")
-                if isinstance(fit_value, str):
-                    fit_value = display_label(fit_value, language)
-                cols[1].metric(ui_text("report.top_matches.fit", language), fit_value)
-                if match.get("resolution_note"):
-                    st.caption(dynamic_text(match["resolution_note"], language, "career title resolution note"))
+            _render_match_card(match, language)
+            with st.expander(ui_text("report.top_matches.detail_card", language)):
+                _render_job_detail(match, language)
 
-                with st.expander(ui_text("report.top_matches.detail_card", language)):
-                    _render_job_detail(match, language)
+
+def _render_match_card(match: dict[str, Any], language: str = "en") -> None:
+    title = _match_display_title(match, language)
+    rank = match.get("rank") or ""
+    fit_label = _format_fit_value(match.get("fit_label") or match.get("fit_score"), language)
+    impact_level = _ai_level_for_match(match)
+    reason = ""
+    reasons = match.get("why_it_fits") or []
+    if reasons:
+        reason = dynamic_text(_without_citations(reasons[0]), language, "career match reason")
+    details = match.get("onet_details") or {}
+    zone = _job_zone_title((details.get("job_zone") or {}).get("zone") or match.get("target_job_zone"), language)
+    st.markdown(
+        (
+            "<div class='match-card'>"
+            "<div class='match-topline'>"
+            "<div>"
+            f"<div class='report-kicker'>{_html(zone)}</div>"
+            f"<div class='match-title'>{_html(title)}</div>"
+            "</div>"
+            f"<div class='match-rank'>#{_html(rank)}</div>"
+            "</div>"
+            "<div class='report-chip-row'>"
+            f"{_chip_html(fit_label)}"
+            f"{_impact_badge_html(impact_level, language)}"
+            "</div>"
+            f"<p class='match-reason'>{_html(reason)}</p>"
+            "</div>"
+        ),
+        unsafe_allow_html=True,
+    )
+    if match.get("resolution_note"):
+        st.caption(dynamic_text(match["resolution_note"], language, "career title resolution note"))
 
 
 def _render_job_detail(match: dict[str, Any], language: str = "en") -> None:
     details = match.get("onet_details") or {}
+    reasons = match.get("why_it_fits") or []
+    if reasons:
+        st.markdown(f"**{ui_text('report.top_matches.fit', language)}**")
+        _write_bullets(reasons, language)
+        _write_source_indexes(reasons)
+
     st.markdown(f"**{ui_text('report.job.what_does', language)}**")
     description = details.get("description") or ui_text("report.job.no_description", language)
     st.write(dynamic_text(_without_citations(description), language, "O*NET occupation description"))
     _write_source_indexes(description)
+
+    st.markdown(f"**{ui_text('report.job.ai_impact', language)}**")
+    _render_ai_summary(match, language)
+    _render_ai_table(match, language)
 
     st.markdown(f"**{ui_text('report.job.main_tasks', language)}**")
     tasks = details.get("tasks") or []
@@ -136,14 +383,43 @@ def _render_job_detail(match: dict[str, Any], language: str = "en") -> None:
     st.markdown(f"**{ui_text('report.job.education_zone', language)}**")
     _render_education_job_zone(match, language)
 
-    st.markdown(f"**{ui_text('report.job.ai_impact', language)}**")
-    _render_ai_table(match, language)
+    _render_next_steps_if_available(match, language)
 
     st.markdown(f"**{ui_text('report.job.day_life', language)}**")
     day_text = match.get("day_in_the_life") or ""
     if day_text:
         st.info(dynamic_text(_clean_day_text(day_text), language, "day-in-the-life career narrative"))
         _write_source_indexes([day_text, details.get("tasks") or [], details.get("work_context") or []])
+
+
+def _render_ai_summary(match: dict[str, Any], language: str = "en") -> None:
+    ai_impact = match.get("ai_impact") or {}
+    level = _ai_level_for_match(match)
+    summary = ai_impact.get("future_outlook_summary") or ""
+    st.markdown(_impact_badge_html(level, language), unsafe_allow_html=True)
+    if summary:
+        st.write(dynamic_text(_without_citations(summary), language, "AI-impact summary"))
+        _write_source_indexes(summary)
+    elif ai_impact.get("task_breakdown"):
+        st.caption(ui_text("report.ai.caption", language))
+    else:
+        st.info(ui_text("report.ai.no_rows", language))
+
+
+def _render_next_steps_if_available(match: dict[str, Any], language: str = "en") -> None:
+    values = (
+        match.get("roadmap")
+        or match.get("next_steps")
+        or match.get("skills_to_learn")
+        or match.get("learning_plan")
+        or []
+    )
+    if isinstance(values, str):
+        values = [values]
+    if not isinstance(values, list) or not values:
+        return
+    st.markdown("**Next Steps**")
+    _write_bullets(values, language)
 
 
 def _render_ai_table(match: dict[str, Any], language: str = "en") -> None:
@@ -181,9 +457,17 @@ def _render_alternatives(report: dict[str, Any], language: str = "en") -> None:
     for item in alternatives[:5]:
         zone = _job_zone_title((item.get("job_zone") or {}).get("zone"), language)
         source_links = _source_links(item, source_map)
-        suffix = f" {source_links}" if source_links else ""
         title = dynamic_text(item.get("title"), language, "alternative career title")
-        st.markdown(f"- **{title}** - {zone}{suffix}")
+        st.markdown(
+            (
+                "<div class='match-card'>"
+                f"<div class='match-title'>{_html(title)}</div>"
+                f"<p class='report-muted'>{_html(zone)}</p>"
+                f"<div class='report-chip-row'>{_html(source_links)}</div>"
+                "</div>"
+            ),
+            unsafe_allow_html=True,
+        )
 
 
 def _render_semantic_report(report: dict[str, Any], language: str = "en") -> None:
@@ -209,16 +493,17 @@ def _render_semantic_report(report: dict[str, Any], language: str = "en") -> Non
 
     semantic_markdown = _semantic_report_markdown(section, language)
     if semantic_markdown:
-        with st.container(border=True):
-            st.markdown(format_semantic_report(semantic_markdown, language))
-            _write_source_indexes(
-                [
-                    section.get("relevant_careers_explanation"),
-                    section.get("technology_ai_role"),
-                    section.get("takeaways"),
-                    summary,
-                ]
-            )
+        st.markdown("<div class='report-section-rule'></div>", unsafe_allow_html=True)
+        st.markdown(format_semantic_report(semantic_markdown, language))
+        st.markdown("<div class='report-section-rule'></div>", unsafe_allow_html=True)
+        _write_source_indexes(
+            [
+                section.get("relevant_careers_explanation"),
+                section.get("technology_ai_role"),
+                section.get("takeaways"),
+                summary,
+            ]
+        )
 
     signals = section.get("semantic_career_signals") or []
     if signals:
@@ -403,11 +688,12 @@ def _render_wrapped_table(rows: list[dict[str, Any]]) -> None:
     st.markdown(
         (
             "<style>"
-            ".wrapped-report-table{width:100%;border-collapse:collapse;font-size:0.92rem;}"
+            ".wrapped-report-table{width:100%;border-collapse:collapse;font-size:0.88rem;"
+            "background:#101012;color:#d6d6da;}"
             ".wrapped-report-table th,.wrapped-report-table td{"
-            "border:1px solid rgba(49,51,63,.2);padding:0.55rem;vertical-align:top;"
+            "border:1px solid #2a2a2f;padding:0.55rem;vertical-align:top;"
             "white-space:normal;word-break:break-word;overflow-wrap:anywhere;}"
-            ".wrapped-report-table th{background:rgba(240,242,246,.75);font-weight:600;}"
+            ".wrapped-report-table th{background:#202024;color:#ffffff;font-weight:800;}"
             ".wrapped-report-table td:nth-child(1){min-width:18rem;}"
             "</style>"
             f"<table class='wrapped-report-table'><thead><tr>{header}</tr></thead>"
@@ -541,11 +827,44 @@ def _skill_chip_html(values: list[Any]) -> str:
     return (
         "<style>"
         ".skill-chip{display:inline-block;margin:0 0.35rem 0.35rem 0;"
-        "padding:0.22rem 0.5rem;border:1px solid rgba(49,51,63,.22);"
-        "border-radius:0.35rem;background:rgba(240,242,246,.7);font-size:0.9rem;}"
+        "padding:0.22rem 0.5rem;border:1px solid #3a3a40;"
+        "border-radius:999px;background:#202024;color:#ffffff;font-size:0.86rem;"
+        "font-weight:750;}"
         "</style>"
         + "".join(chips)
     )
+
+
+def _match_display_title(match: dict[str, Any], language: str = "en") -> str:
+    return dynamic_text(
+        match.get("display_title") or ui_text("report.career_fallback", language),
+        language,
+        "career match title",
+    )
+
+
+def _format_fit_value(value: Any, language: str = "en") -> str:
+    if isinstance(value, str) and value.strip():
+        return display_label(value, language)
+    if isinstance(value, (int, float)):
+        if 0 <= float(value) <= 1:
+            return f"{float(value) * 100:.0f}% fit"
+        return f"{float(value):.1f}"
+    return ui_text("common.na", language)
+
+
+def _ai_level_for_match(match: dict[str, Any]) -> str:
+    rows = (match.get("ai_impact") or {}).get("task_breakdown") or []
+    levels = {str(row.get("automation_level") or "").strip().lower() for row in rows}
+    if "high" in levels:
+        return "High"
+    if "medium" in levels:
+        return "Medium"
+    if "low" in levels:
+        return "Low"
+    if (match.get("ai_impact") or {}).get("future_outlook_summary"):
+        return "Available"
+    return "Unavailable"
 
 
 def _match_title(match: dict[str, Any], language: str = "en") -> str:
